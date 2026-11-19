@@ -37,7 +37,7 @@ class BuiltinLibrary extends Component {
   }
 
   static get ROOT_ASSET_PATH () {
-    return process.env.PUBLIC_URL + '/builtinlibrary/';
+    return import.meta.env.BASE_URL + 'builtinlibrary/';
   }
 
   render() {

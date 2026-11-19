@@ -41,6 +41,8 @@ import 'Editor/styles/PopOuts/_wickcodeeditor.css';
 import capitalize from 'Editor/Util/DataFunctions/capitalize';
 import ToolIcon from '../../Util/ToolIcon/ToolIcon';
 
+import classNames from 'classnames';
+
 const editorThemes = [
   {
     value: 'monokai',
@@ -62,8 +64,6 @@ const editorThemes = [
     value: 'github',
     label: 'Github',
   }]
-
-let classNames = require('classnames');
 
 export default function WickCodeEditor(props) {
 

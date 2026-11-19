@@ -20,8 +20,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Editor tests
-        run: npm test -- --watchAll=false
+        run: npm test
 
       - name: Cloud save tests (Firestore emulator)
         run: npm run test:cloud
@@ -29,8 +32,8 @@ jobs:
       - name: Engine tests (headless browser)
         run: npm run test:engine
 
-      # CI=false: the build still has warnings, which would otherwise be treated as errors.
       - name: Build
         run: npm run build
-        env:
-          CI: false
+
+      - name: Smoke test of the build (headless browser)
+        run: npm run test:smoke

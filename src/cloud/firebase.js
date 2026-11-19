@@ -1,7 +1,7 @@
 /**
  * Firebase setup and Google authentication.
  *
- * The configuration is read from REACT_APP_FIREBASE_* environment variables
+ * The configuration is read from VITE_FIREBASE_* environment variables
  * (see .env). If they are not set, the editor keeps working without accounts
  * and saves/loads projects as files only.
  */
@@ -17,10 +17,10 @@ import {
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 export const isFirebaseConfigured = Boolean(

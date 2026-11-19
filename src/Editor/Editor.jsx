@@ -57,9 +57,9 @@ import WickCodeEditor from './PopOuts/WickCodeEditor/WickCodeEditor';
 import EditorWrapper from './EditorWrapper';
 import { onUserChange } from '../cloud/firebase';
 
-const { version } = require('../../package.json');
+import { version } from '../../package.json';
 
-var classNames = require('classnames');
+import classNames from 'classnames';
 
 class Editor extends EditorCore {
   constructor () {
@@ -271,6 +271,13 @@ class Editor extends EditorCore {
     this.onWindowResize();
     let offerAutosave = !this.tryToParseProjectURL();
 
+    // Only an autosave from a previous visit is offered. This is checked now, because by the
+    // time we know who is signed in, the work being done in this visit may have been autosaved.
+    let previousAutosave = new Promise(resolve => {
+      let owner = this.getAutosaveOwner();
+      this.doesAutoSavedProjectExist(exists => resolve({ exists, owner }));
+    });
+
     this.watchForHover();
 
     // Keep track of the signed in user.
@@ -283,7 +290,9 @@ class Editor extends EditorCore {
       this.setState({ user }, () => {
         if (isFirstCheck) {
           // The autosave belongs to a user, so it can only be offered once we know who is signed in.
-          offerAutosave && this.showAutosavedProjects();
+          previousAutosave.then(({ exists, owner }) => {
+            if (exists && offerAutosave) this.showAutosavedProjects(owner);
+          });
         } else if (previousUser && (!user || user.uid !== previousUser.uid)) {
           this.closeProjectOnSignOut();
         }

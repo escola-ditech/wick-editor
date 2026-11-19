@@ -27,13 +27,13 @@ import imageImage from 'resources/object-icons/image.png';
 import scriptIcon from 'resources/outliner-icons/script.svg';
 import soundIcon from 'resources/outliner-icons/sound.svg';
 
+import classNames from 'classnames';
+
 let icons = {layer: layerIcon, frame: frameIcon, path: pathIcon, button: buttonIcon, 
   clip: clipIcon, text: textIcon, image: imageIcon};
 
 let images = {layer: layerImage, frame: frameImage, path: pathImage, button: buttonImage, 
   clip: clipImage, text: textImage, image: imageImage};
-
-var classNames = require("classnames");
 
 export const OutlinerObject = ({clearSelection, selectObjects, 
   editScript, playhead, depth, maxDepth, display, highlighted, 

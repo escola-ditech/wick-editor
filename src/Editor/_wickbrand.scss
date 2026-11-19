@@ -318,8 +318,9 @@ $docked-title-height: 26px;
 $docked-margin: 6px;
 
 // Export some colors to be used in JS in some places (canvas, timeline)
-:export {
-  editorCanvasBorder: $editor-canvas-border;
+// Colors that are also needed in JavaScript, read with getComputedStyle.
+:root {
+  --editor-canvas-border: #{$editor-canvas-border};
 }
 
 button:focus, input:focus {

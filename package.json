@@ -39,7 +39,6 @@
     "react-reflex": "^3.0.6",
     "react-resize-detector": "^3.1.3",
     "react-rnd": "^10.2.3",
-    "react-scripts": "5.0.1",
     "react-select": "^2.1.0",
     "react-sizeme": "^2.6.12",
     "react-spinners": "^0.9.0",
@@ -54,34 +53,37 @@
     "url-parse": "^1.4.7"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "test:cloud": "npx -y firebase-tools emulators:exec --only firestore --project demo-wick-editor \"react-scripts test --watchAll=false src/cloud\"",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx",
+    "test": "vitest run",
+    "test:cloud": "npx -y firebase-tools emulators:exec --only firestore --project demo-wick-editor \"vitest run src/cloud\"",
     "test:engine": "node scripts/test-engine.js",
+    "test:smoke": "node scripts/test-smoke.js",
     "build-engine": "node scripts/build-engine.js",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "eject": "react-scripts eject"
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": "react-app"
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ],
   "devDependencies": {
+    "@babel/core": "^7.29.13",
     "@firebase/rules-unit-testing": "^3.0.4",
-    "gh-pages": "^2.0.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^8.57.1",
+    "eslint-config-react-app": "^7.0.1",
+    "gh-pages": "^6.3.0",
     "gulp": "^4.0.2",
     "gulp-babel": "^8.0.0",
     "gulp-concat": "^2.6.1",
     "gulp-header": "^2.0.9",
     "gulp-rename": "^2.0.0",
     "gulp-uglify": "^3.0.2",
-    "puppeteer-core": "^23.11.1"
+    "merge-stream": "^2.0.0",
+    "puppeteer-core": "^23.11.1",
+    "vite": "^6.4.6",
+    "vitest": "^5.1.1"
   }
 }

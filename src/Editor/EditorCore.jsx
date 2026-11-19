@@ -1532,10 +1532,21 @@ class EditorCore extends Component {
     });
   }
 
-  showAutosavedProjects = () => {
+  /**
+   * Returns the id of the user who was signed in when the autosave was made, or '' if nobody was.
+   */
+  getAutosaveOwner = () => {
+    return window.localStorage.getItem(AUTOSAVE_OWNER_KEY) || '';
+  }
+
+  /**
+   * Offers to load the autosaved project.
+   * @param {string} owner - id of the user the autosave belongs to, see getAutosaveOwner.
+   */
+  showAutosavedProjects = (owner) => {
     // The autosave is stored in the browser. Never offer it to someone other than
     // the user who was signed in when it was made.
-    let owner = window.localStorage.getItem(AUTOSAVE_OWNER_KEY) || '';
+    if (owner === undefined) owner = this.getAutosaveOwner();
     let currentUser = this.state.user ? this.state.user.uid : '';
     if (owner !== '' && owner !== currentUser) {
       this.clearAllAutoSavedProjects();

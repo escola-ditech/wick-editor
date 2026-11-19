@@ -5,7 +5,7 @@ import ActionButton from '../../Util/ActionButton/ActionButton';
 
 import './_savedprojects.scss';
 import SavedProjectItem from './SavedProjectItem/SavedProjectItem';
-let classNames = require('classnames');
+import classNames from 'classnames';
 
 // Saved files from an account have ids, files saved on the device only have names.
 let getKey = (project) => project.id || project.name;

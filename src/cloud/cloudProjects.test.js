@@ -1,31 +1,15 @@
-/**
- * @jest-environment node
- */
-
 // Tests saving projects to a user's account, and the rules in firestore.rules,
 // against the Firestore emulator. Run with: npm run test:cloud
 
-// The test environment hides the globals of newer Node versions that the Firebase
-// SDK needs (streams, Blob, File...), so they are copied in before it is loaded.
-// This is also why the modules below are loaded with require instead of import.
-const nodeGlobals = require('vm').runInThisContext('globalThis');
-for (const name of Object.getOwnPropertyNames(nodeGlobals)) {
-  if (name in global) continue;
-  try {
-    global[name] = nodeGlobals[name];
-  } catch (e) {
-    // Not available in this Node version.
-  }
-}
-
-const { readFileSync } = require('fs');
-const {
+import { readFileSync } from 'fs';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import {
   assertFails,
   assertSucceeds,
   initializeTestEnvironment,
-} = require('@firebase/rules-unit-testing');
-const { Bytes, collection, doc, getDocs, serverTimestamp, setDoc } = require('firebase/firestore');
-const {
+} from '@firebase/rules-unit-testing';
+import { Bytes, collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import {
   MAX_PROJECTS,
   MAX_PROJECT_SIZE,
   deleteCloudProject,
@@ -33,14 +17,19 @@ const {
   loadCloudProject,
   newCloudProjectId,
   saveCloudProject,
-} = require('./cloudProjects');
+} from './cloudProjects';
 
-jest.mock('./firebase', () => ({ __esModule: true, db: null }));
+// The functions under test use the database exported by ./firebase. Here it is
+// replaced by a database of the emulator, signed in as the user set by actAs.
+const current = vi.hoisted(() => ({ db: null }));
+vi.mock('./firebase', () => ({
+  get db() {
+    return current.db;
+  },
+}));
 
 // These tests need the Firestore emulator, so they are skipped in a plain `npm test`.
 const withEmulator = process.env.FIRESTORE_EMULATOR_HOST ? describe : describe.skip;
-
-jest.setTimeout(60000);
 
 const ALICE = 'alice';
 const BOB = 'bob';
@@ -51,7 +40,7 @@ let testEnv;
 function actAs(uid) {
   const context = uid ? testEnv.authenticatedContext(uid) : testEnv.unauthenticatedContext();
   const db = context.firestore();
-  jest.requireMock('./firebase').db = db;
+  current.db = db;
   return db;
 }
 

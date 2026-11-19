@@ -78,15 +78,17 @@ Signing in with Google and saving projects to the user's account uses Firebase. 
 
 2) Publish the rules in `firestore.rules` to the database.
 
-3) Fill in the `REACT_APP_FIREBASE_*` values in `.env` and restart `npm start`.
+3) Fill in the `VITE_FIREBASE_*` values in `.env` and restart `npm start`.
 
 ### Running the tests
 
 | Command | What it tests | Needs |
 |---|---|---|
+| `npm run lint` | Code style and common mistakes | |
 | `npm test` | Editor | |
 | `npm run test:cloud` | Saving projects to accounts and `firestore.rules`, on the Firestore emulator | Java |
 | `npm run test:engine` | Wick Engine (`engine/tests`), in a headless browser | Chrome or Edge |
+| `npm run test:smoke` | The built editor starts, draws, saves and opens its windows without errors (run `npm run build` first, or add `-- --dev` to test the development server) | Chrome or Edge |
 
 Engine tests that are known to fail are listed in `scripts/engine-known-failures.json`.
 
@@ -104,7 +106,9 @@ npm run build-engine
 npm run build
 ```
 
-The site is generated in the `build` folder.
+The site is generated in the `build` folder. `npm run preview` serves it locally.
+
+The editor is built with [Vite](https://vite.dev/). Its configuration is in `vite.config.mjs`.
 
 ## Support
 
