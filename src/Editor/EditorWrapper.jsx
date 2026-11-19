@@ -106,6 +106,11 @@ export default function EditorWrapper(props) {
                     openProjectFileDialog={props.editor.openProjectFileDialog}
                     openNewProjectConfirmation={props.editor.openNewProjectConfirmation}
                     localSavedFiles={props.editor.state.localSavedFiles}
+                    savedFilesLoading={props.editor.state.savedFilesLoading}
+                    openProjectFileFromClient={props.editor.openProjectFileFromClient}
+                    user={props.editor.state.user}
+                    signIn={props.editor.signIn}
+                    signOut={props.editor.openSignOutConfirmation}
                     loadLocalWickFile={props.editor.loadLocalWickFile}
                     deleteLocalWickFile={props.editor.deleteLocalWickFile}
                     reloadSavedWickFiles={props.editor.reloadSavedWickFiles}

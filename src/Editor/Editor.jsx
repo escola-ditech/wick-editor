@@ -55,6 +55,7 @@ import OutlinerExpandButton from './Panels/OutlinerExpandButton/OutlinerExpandBu
 import WickCodeEditor from './PopOuts/WickCodeEditor/WickCodeEditor';
 
 import EditorWrapper from './EditorWrapper';
+import { onUserChange } from '../cloud/firebase';
 
 const { version } = require('../../package.json');
 
@@ -111,6 +112,8 @@ class Editor extends EditorCore {
       },
       onionSkinningWasOn: false,
       localSavedFiles: [], // Files to display in savedProjects Modal.
+      savedFilesLoading: false,
+      user: null, // Signed in user, if any.
     };
 
     // Catch all errors that happen in the editor.
@@ -271,6 +274,13 @@ class Editor extends EditorCore {
     }
 
     this.watchForHover();
+
+    // Keep track of the signed in user.
+    this.stopWatchingUser = onUserChange(user => this.setState({ user }));
+  }
+
+  componentWillUnmount = () => {
+    this.stopWatchingUser && this.stopWatchingUser();
   }
 
   componentDidUpdate = (prevProps, prevState) => {
@@ -865,8 +875,16 @@ class Editor extends EditorCore {
     this.createAssets(e.target.files, []);
   }
 
+  /**
+   * Opens the projects saved in the user's account if signed in, otherwise
+   * opens the file dialog to pick a project file.
+   */
   openProjectFileDialog = () => {
-    this.openProjectFileFromClient();
+    if (this.state.user) {
+      this.openCloudProjects();
+    } else {
+      this.openProjectFileFromClient();
+    }
   }
 
   openImportAssetFileDialog = () => {
@@ -939,8 +957,11 @@ class Editor extends EditorCore {
               projectName={this.project.name}
               openProjectFileDialog={this.openProjectFileDialog}
               openNewProjectConfirmation={this.openNewProjectConfirmation}
-              exportProjectAsWickFile={this.exportProjectAsWickFile}
+              exportProjectAsWickFile={this.saveProject}
               importProjectAsWickFile={this.importProjectAsWickFile}
+              user={this.state.user}
+              signIn={this.signIn}
+              signOut={this.openSignOutConfirmation}
               exporting={this.state.exporting}
               toast={this.toast} 
               openExportMedia={() => {this.openModal('ExportMedia')}}

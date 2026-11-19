@@ -7,11 +7,17 @@ import './_savedprojects.scss';
 import SavedProjectItem from './SavedProjectItem/SavedProjectItem';
 let classNames = require('classnames');
 
+// Saved files from an account have ids, files saved on the device only have names.
+let getKey = (project) => project.id || project.name;
+
 export default function SavedProjects(props) {
   // Use an empty list if saved files are not provided.
   const projects = props.localSavedFiles ? props.localSavedFiles : []
 
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  // The selection only counts while the project is still in the list.
+  const selectedProject = projects.find(project => getKey(project) === selectedKey) || null;
 
   let openSelectedFile = () => {
     props.loadLocalWickFile(selectedProject);
@@ -19,8 +25,14 @@ export default function SavedProjects(props) {
   }
 
   let deleteSelectedFile = () => {
-    props.deleteLocalWickFile(selectedProject);
-    props.reloadSavedWickFiles();
+    Promise.resolve(props.deleteLocalWickFile(selectedProject)).then(() => {
+      props.reloadSavedWickFiles();
+    });
+  }
+
+  let openFromFile = () => {
+    props.toggle();
+    props.openProjectFileFromClient();
   }
 
   let attemptOpenFile = () => {
@@ -61,14 +73,19 @@ export default function SavedProjects(props) {
       </h3>
       <div className="saved-projects-modal-body">
         {
-          projects.map(project => <SavedProjectItem 
-              onClick={() => setSelectedProject(project)}
-              selected={selectedProject && selectedProject.name === project.name}
+          projects.map(project => <SavedProjectItem
+              key={getKey(project)}
+              onClick={() => setSelectedKey(getKey(project))}
+              selected={selectedProject === project}
               item={project} />)
         }
 
         {
-          (projects.length === 0) && "No Saved Files"
+          props.loading && "Loading..."
+        }
+
+        {
+          (!props.loading && projects.length === 0) && "No Saved Files"
         }
       </div>
       <div className="saved-projects-modal-footer">
@@ -79,6 +96,14 @@ export default function SavedProjects(props) {
           action={attemptDeleteFile}
           text="Delete"
         />
+        {props.openProjectFileFromClient &&
+          <ActionButton
+            className="saved-projects-modal-button"
+            color="gray"
+            action={openFromFile}
+            text="From file"
+          />
+        }
         <ActionButton
           className="saved-projects-modal-button"
           disabled={selectedProject === null}

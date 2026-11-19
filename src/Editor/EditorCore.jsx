@@ -23,6 +23,8 @@ import VideoExport from './export/VideoExport';
 import GIFExport from './export/GIFExport';
 import GIFImport from './import/GIFImport';
 import AudioExport from './export/AudioExport';
+import { isFirebaseConfigured, signInWithGoogle, signOutUser } from '../cloud/firebase';
+import { saveCloudProject, listCloudProjects, loadCloudProject, deleteCloudProject } from '../cloud/cloudProjects';
 
 class EditorCore extends Component {
 
@@ -979,6 +981,102 @@ class EditorCore extends Component {
   }
 
   /**
+   * Saves the current project. If a user is signed in, the project is saved to
+   * their account, otherwise it is downloaded as a .wick file.
+   */
+  saveProject = () => {
+    if (this.state.user) {
+      this.saveProjectToCloud();
+    } else {
+      this.exportProjectAsWickFile();
+    }
+  }
+
+  /**
+   * Saves the current project to the signed in user's account.
+   */
+  saveProjectToCloud = () => {
+    let user = this.state.user;
+    let project = this.project;
+
+    this.showWaitOverlay();
+    let toastID = this.toast('Saving project to your account...', 'info', {autoClose: false});
+
+    let fail = (error) => {
+      error && console.error(error);
+      this.updateToast(toastID, {
+        type: 'error',
+        text: "Could not save project to your account. Please try again." });
+      this.hideWaitOverlay();
+    }
+
+    window.Wick.WickFile.toWickFile(project, file => {
+      if (file === undefined) {
+        fail();
+        return;
+      }
+
+      file = new Blob([file], {type: 'application/wick'});
+      saveCloudProject(user.uid, project.uuid, project.name, file).then(() => {
+        this.updateToast(toastID, {
+          type: 'success',
+          text: "Successfully saved project to your account." });
+        this.hideWaitOverlay();
+      }).catch(fail);
+    });
+  }
+
+  /**
+   * Opens the list of projects saved in the signed in user's account.
+   */
+  openCloudProjects = () => {
+    this.setState({
+      localSavedFiles: [],
+      savedFilesLoading: true,
+      activeModalName: 'SavedProjects',
+    });
+    this.reloadSavedWickFiles();
+  }
+
+  /**
+   * Signs in using a Google account.
+   */
+  signIn = () => {
+    if (!isFirebaseConfigured) {
+      this.toast('Accounts are not available: Firebase is not configured.', 'warning');
+      return;
+    }
+
+    signInWithGoogle().then(user => {
+      this.toast(`Signed in as ${user.displayName || user.email}.`, 'success');
+    }).catch(error => {
+      // Closing the popup is not an error worth reporting.
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') return;
+      console.error(error);
+      this.toast('Could not sign in. Please try again.', 'error');
+    });
+  }
+
+  /**
+   * Asks for confirmation, then signs the current user out.
+   */
+  openSignOutConfirmation = () => {
+    let user = this.state.user;
+    if (!user) return;
+
+    this.openWarningModal({
+      title: "Sign out?",
+      description: `You are signed in as ${user.email || user.displayName}. After signing out, projects are saved and opened as files.`,
+      acceptAction: () => {
+        signOutUser().then(() => this.toast('Signed out.', 'info'));
+      },
+      cancelAction: () => {},
+      acceptText: "Sign out",
+      cancelText: "Cancel",
+    });
+  }
+
+  /**
    * Export the current project as a Wick File using the save as dialog.
    */
   exportProjectAsWickFile = () => {
@@ -1798,7 +1896,16 @@ class EditorCore extends Component {
    * @param {*} fileEntry 
    */
   loadLocalWickFile = (fileEntry) => {
-    if (window.loadWickFileEntry) {
+    if (fileEntry.cloud) {
+      this.showWaitOverlay();
+      loadCloudProject(this.state.user.uid, fileEntry.id).then(file => {
+        this.importProjectAsWickFile(file);
+      }).catch(error => {
+        console.error(error);
+        this.toast('Could not open project from your account.', 'error');
+        this.hideWaitOverlay();
+      });
+    } else if (window.loadWickFileEntry) {
       window.loadWickFileEntry(fileEntry, (blob) => {
         // Wraps the file in a fake event. TODO: Simplify this.
         this.handleWickFileLoad({
@@ -1817,6 +1924,15 @@ class EditorCore extends Component {
    * @param {FileEntry} fileEntry 
    */
   deleteLocalWickFile = (fileEntry) => {
+    if (fileEntry.cloud) {
+      return deleteCloudProject(this.state.user.uid, fileEntry.id).then(() => {
+        this.toast(`Deleted ${fileEntry.name}.`, 'success');
+      }).catch(error => {
+        console.error(error);
+        this.toast('Could not delete project from your account.', 'error');
+      });
+    }
+
     window.deleteLocalWickFile(fileEntry);
   }
 
@@ -1824,7 +1940,21 @@ class EditorCore extends Component {
    * Reloads any saved files currently on disk.
    */
   reloadSavedWickFiles = () => {
-    if (window.getSavedWickFiles) {
+    if (this.state.user) {
+      listCloudProjects(this.state.user.uid).then(files => {
+        this.setState({
+          localSavedFiles: files,
+          savedFilesLoading: false,
+        });
+      }).catch(error => {
+        console.error(error);
+        this.toast('Could not load the projects saved in your account.', 'error');
+        this.setState({
+          localSavedFiles: [],
+          savedFilesLoading: false,
+        });
+      });
+    } else if (window.getSavedWickFiles) {
        window.getSavedWickFiles(files => {
         this.setState({
           localSavedFiles: files,

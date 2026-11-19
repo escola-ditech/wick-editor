@@ -67,6 +67,28 @@
   height: 100%;
 }
 
+.menu-bar-account {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+  cursor: pointer;
+  color: $editor-menubar-option-text;
+}
+
+.menu-bar-account-photo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.menu-bar-account-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-settings-preview {
   height: 70%;
   padding-left: 8px;

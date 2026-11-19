@@ -147,6 +147,9 @@ class ModalHandler extends Component {
         <MobileMenu
           openProjectFileDialog={this.props.openProjectFileDialog}
           openNewProjectConfirmation={this.props.openNewProjectConfirmation}
+          user={this.props.user}
+          signIn={this.props.signIn}
+          signOut={this.props.signOut}
           openModal={this.props.openModal}
           toggle={this.props.closeActiveModal}
           open={this.props.activeModalName === 'MobileMenuModal'}
@@ -155,7 +158,10 @@ class ModalHandler extends Component {
           openModal={this.props.openModal}
           toggle={this.props.closeActiveModal}
           open={this.props.activeModalName === 'SavedProjects'}
+          isMobile={isMobile}
           localSavedFiles={this.props.localSavedFiles}
+          loading={this.props.savedFilesLoading}
+          openProjectFileFromClient={this.props.user && this.props.openProjectFileFromClient}
           loadLocalWickFile={this.props.loadLocalWickFile}
           deleteLocalWickFile={this.props.deleteLocalWickFile}
           reloadSavedWickFiles={this.props.reloadSavedWickFiles}

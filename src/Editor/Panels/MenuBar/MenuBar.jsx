@@ -25,6 +25,31 @@ import MenuBarSupportButton from './MenuBarSupportButton/MenuBarSupportButton';
 
 class MenuBar extends Component {
 
+  renderAccountButton = () => {
+    let user = this.props.user;
+
+    if (!user) {
+      return (
+        <MenuBarButton
+          text="login"
+          action={this.props.signIn}
+        />
+      );
+    }
+
+    return (
+      <div
+        className="menu-bar-account"
+        role="button"
+        title={`Signed in as ${user.email || user.displayName}. Click to sign out.`}
+        onClick={this.props.signOut}>
+        {user.photoURL
+          ? <img className="menu-bar-account-photo" src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+          : <span className="menu-bar-account-name">{user.displayName || user.email}</span>}
+      </div>
+    );
+  }
+
   renderDesktop = () => {
     return(
       <div className="docked-pane menu-bar" aria-label="Menu Bar">
@@ -71,6 +96,8 @@ class MenuBar extends Component {
             color='save'
           />
           
+          {this.renderAccountButton()}
+
           <MenuBarIconButton
             icon="gear"
             action={() => this.props.openModal('SettingsModal')}
