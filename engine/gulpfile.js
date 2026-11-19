@@ -3,8 +3,8 @@ var gulp = require('gulp');
 var babel = require("gulp-babel");
 var concat = require('gulp-concat');
 var rename = require('gulp-rename');
-var uglify = require('gulp-uglify');
 var header = require('gulp-header');
+var esbuild = require('esbuild');
 var mergeStream = require('merge-stream');
 
 gulp.task("default", function() {
@@ -172,6 +172,14 @@ gulp.task("default", function() {
       /* Generate empty HTML file ready for wick projects to be injected into */
       var blankHTML = fs.readFileSync('src/export/html/project.html', 'utf8');
       var engineSRC = fs.readFileSync('dist/wickengine.js', 'utf8');
+
+      /* Minify the engine. Set WICK_ENGINE_NO_MINIFY=1 for a readable build when debugging. */
+      if (!process.env.WICK_ENGINE_NO_MINIFY) {
+        engineSRC = '/*Wick Engine https://github.com/Wicklets/wick-engine*/\n' +
+          esbuild.transformSync(engineSRC, { minify: true, legalComments: 'inline' }).code;
+        fs.writeFileSync('dist/wickengine.js', engineSRC);
+      }
+
       var engineSRCSafe = engineSRC.replace(/\$/g, "$$$"); // http://forums.mozillazine.org/viewtopic.php?f=19&t=2182187
       blankHTML = blankHTML.replace('<!--INJECT_WICKENGINE_HERE-->', engineSRCSafe);
       fs.writeFileSync('dist/emptyproject.html', blankHTML);

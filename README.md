@@ -78,7 +78,7 @@ Signing in with Google and saving projects to the user's account uses Firebase. 
 
 2) Publish the rules in `firestore.rules` to the database.
 
-3) Fill in the `VITE_FIREBASE_*` values in `.env` and restart `npm start`.
+3) Copy `.env.example` to `.env`, fill in the `VITE_FIREBASE_*` values and restart `npm start`. The `.env` file is not committed.
 
 ### Running the tests
 

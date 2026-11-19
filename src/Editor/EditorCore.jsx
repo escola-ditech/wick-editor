@@ -18,7 +18,6 @@
  */
 
 import { Component } from 'react';
-import queryString from 'query-string';
 import VideoExport from './export/VideoExport';
 import GIFExport from './export/GIFExport';
 import GIFImport from './import/GIFImport';
@@ -1571,7 +1570,7 @@ class EditorCore extends Component {
    * the example parameter takes precedence.
    */
   tryToParseProjectURL = () => {
-    var urlParams = queryString.parse(window.location.search);
+    var urlParams = Object.fromEntries(new URLSearchParams(window.location.search));
 
   
     let loadProjectFromURL = (url) => {
