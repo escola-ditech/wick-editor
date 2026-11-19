@@ -96,6 +96,13 @@ class MenuBar extends Component {
             color='save'
           />
           
+          {this.props.user &&
+            <MenuBarButton
+              text="download"
+              action={this.props.downloadProjectAsWickFile}
+            />
+          }
+
           {this.renderAccountButton()}
 
           <MenuBarIconButton

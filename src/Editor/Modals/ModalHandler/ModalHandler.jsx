@@ -150,6 +150,7 @@ class ModalHandler extends Component {
           user={this.props.user}
           signIn={this.props.signIn}
           signOut={this.props.signOut}
+          downloadProjectAsWickFile={this.props.downloadProjectAsWickFile}
           openModal={this.props.openModal}
           toggle={this.props.closeActiveModal}
           open={this.props.activeModalName === 'MobileMenuModal'}

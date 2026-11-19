@@ -37,6 +37,9 @@ class MobileMenu extends Component {
         {text: "export", icon: "export", action: () => this.props.openModal('ExportOptions')},
         {text: "settings", icon: "gear-white", action: () => this.props.openModal('SettingsModal')},
         {text: "about", icon: "mascotmarkwhite", action: () => this.props.openModal('EditorInfo')},
+        ...(this.props.user
+          ? [{text: "download", action: () => { this.props.toggle(); this.props.downloadProjectAsWickFile(); }}]
+          : []),
         this.props.user
           ? {text: "sign out", action: this.props.signOut}
           : {text: "login", action: () => { this.props.toggle(); this.props.signIn(); }}];
