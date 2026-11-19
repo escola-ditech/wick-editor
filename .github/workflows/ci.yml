@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Editor tests
+        run: npm test -- --watchAll=false
+
+      - name: Cloud save tests (Firestore emulator)
+        run: npm run test:cloud
+
+      - name: Engine tests (headless browser)
+        run: npm run test:engine
+
+      # CI=false: the build still has warnings, which would otherwise be treated as errors.
+      - name: Build
+        run: npm run build
+        env:
+          CI: false

@@ -1,0 +1,9 @@
+[
+  "Wick.Clip #tick unload script should run if clip stops being visible",
+  "Wick.Clip #tick unload script should run if clip stops being visible (nested clip)",
+  "Wick.Project #play should send error through callback if there is an error",
+  "Wick.Project #generateAudioTrack should return an audio track with a single 1 second sound",
+  "Wick.Project #generateAudioTrack should return an audio track with a single 0.5 second sound",
+  "Wick.Project #generateAudioTrack should return an audio track with two 0.5 second sounds",
+  "Wick.HTMLPreview should create a popup window correctly"
+]

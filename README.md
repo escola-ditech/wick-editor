@@ -26,13 +26,13 @@ The Wick Editor is a free and open-source tool for creating games, animations, a
 
 ## Getting started
 
-These instructions are for MacOS and Linux, we currently don't have instructions for Windows, but if you need help please feel free to email contact@wickeditor.com.
+These instructions work on Windows, MacOS and Linux.
 
 ### Requirements
 
 You'll need to download the following:
 
-- [npm](https://www.npmjs.com/get-npm)
+- [Node.js](https://nodejs.org/) 22 or newer (includes npm)
 
 ### Installation
 
@@ -70,17 +70,41 @@ You'll need to download the following:
 
 Have fun hacking on Wick! 🎉
 
-### Deploying to Production
+### Accounts (optional)
 
-To deploy, you'll need to have push access to this repo.
+Signing in with Google and saving projects to the user's account uses Firebase. Without it, the editor still works and projects are saved and opened as files.
 
-1) Test the production build by using `npm predeploy`
+1) Create a Firebase project, register a Web app, enable the Google provider in Authentication and create a Firestore database.
 
-2) Run `npm run deploy`
+2) Publish the rules in `firestore.rules` to the database.
 
-### Deploying to Prerelease
+3) Fill in the `REACT_APP_FIREBASE_*` values in `.env` and restart `npm start`.
 
-1) Run `npm run prerelease-deploy`
+### Running the tests
+
+| Command | What it tests | Needs |
+|---|---|---|
+| `npm test` | Editor | |
+| `npm run test:cloud` | Saving projects to accounts and `firestore.rules`, on the Firestore emulator | Java |
+| `npm run test:engine` | Wick Engine (`engine/tests`), in a headless browser | Chrome or Edge |
+
+Engine tests that are known to fail are listed in `scripts/engine-known-failures.json`.
+
+### Building the engine
+
+The editor loads the engine from `public/corelibs/wick-engine`. After changing anything in `engine/`, rebuild it with:
+
+```bash
+npm run build-engine
+```
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+The site is generated in the `build` folder.
 
 ## Support
 
@@ -100,12 +124,6 @@ Wick Editor is under the GNU v3 Public License. See the [LICENSE](LICENSE.md) fo
 * [Follow on Facebook](https://www.facebook.com/wickeditor/)
 
 
-
-## Building and Releasing the Desktop App 
-
-Please refer to this Wiki entry for information on our dektop build processes! [https://github.com/Wicklets/wick-editor/wiki/Building-Desktop-Editors-for-Release](https://github.com/Wicklets/wick-editor/wiki/Building-Desktop-Editors-for-Release).
-
-If you are familiar with electron-builder, electron-packager, or have experience building desktop electron apps for production, we could use your help! Please message us or open an issue.
 
 ## Support From
 
