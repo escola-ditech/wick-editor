@@ -24,7 +24,9 @@ import { ToastContainer } from 'react-toastify';
 import { GlobalHotKeys } from 'react-hotkeys';
 import ErrorPage from './Util/ErrorPage';
 import ModalHandler from './Modals/ModalHandler/ModalHandler';
-import { Hook, Unhook } from 'console-feed';
+// Imported from their own files, so the console viewer (only used by the code editor) is not pulled in.
+import Hook from 'console-feed/lib/Hook';
+import Unhook from 'console-feed/lib/Unhook';
 
 /**
  * EditorWrapper

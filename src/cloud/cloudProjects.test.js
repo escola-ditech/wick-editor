@@ -8,7 +8,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { Bytes, collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import { Bytes, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import {
   MAX_PROJECTS,
   MAX_PROJECT_SIZE,
@@ -59,6 +59,24 @@ async function readBytes(file) {
 
 async function countChunks(db, uid, projectId) {
   return (await getDocs(collection(db, 'users', uid, 'projects', projectId, 'chunks'))).size;
+}
+
+/** A project document that the rules accept. */
+function validProject() {
+  return { name: 'Ok', size: 10, updatedAt: serverTimestamp(), saveId: 's1', chunkCount: 1 };
+}
+
+/** Creates a project the way the rules require: together with the count of projects of the account. */
+function createCounted(db, uid, projectId, projectCount) {
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'users', uid, 'projects', projectId), validProject());
+  batch.set(doc(db, 'users', uid), { projectCount, lastProjectId: projectId });
+  return batch.commit();
+}
+
+async function accountCount(db, uid) {
+  const account = (await getDoc(doc(db, 'users', uid))).data();
+  return account ? account.projectCount : undefined;
 }
 
 beforeAll(async () => {
@@ -194,6 +212,89 @@ withEmulator('limits', () => {
   });
 });
 
+withEmulator('project count', () => {
+  test('saving and deleting keep the count of the account up to date', async () => {
+    const db = actAs(ALICE);
+    const first = newCloudProjectId(ALICE);
+    const second = newCloudProjectId(ALICE);
+
+    await saveCloudProject(ALICE, first, 'One', new Blob([makeBytes(10, 20)]));
+    await saveCloudProject(ALICE, second, 'Two', new Blob([makeBytes(10, 21)]));
+    await saveCloudProject(ALICE, first, 'One again', new Blob([makeBytes(10, 22)]));
+    expect(await accountCount(db, ALICE)).toBe(2);
+
+    await deleteCloudProject(ALICE, first);
+    expect(await accountCount(db, ALICE)).toBe(1);
+
+    // Deleting a project that is already gone changes nothing.
+    await deleteCloudProject(ALICE, first);
+    expect(await accountCount(db, ALICE)).toBe(1);
+  });
+
+  test('a project cannot be created or deleted without counting it', async () => {
+    const db = actAs(ALICE);
+    const project = (id) => doc(db, 'users', ALICE, 'projects', id);
+
+    await assertFails(setDoc(project('p1'), validProject()));
+    await assertSucceeds(createCounted(db, ALICE, 'p1', 1));
+    await assertFails(deleteDoc(project('p1')));
+
+    // Counting more or less than the one project that was created is refused.
+    await assertFails(createCounted(db, ALICE, 'p2', 1));
+    await assertFails(createCounted(db, ALICE, 'p2', 3));
+    await assertSucceeds(createCounted(db, ALICE, 'p2', 2));
+  });
+
+  test('the count cannot be changed on its own', async () => {
+    const db = actAs(ALICE);
+    const account = doc(db, 'users', ALICE);
+    await createCounted(db, ALICE, 'p1', 1);
+    await createCounted(db, ALICE, 'p2', 2);
+
+    await assertFails(setDoc(account, { projectCount: 0, lastProjectId: 'p1' }));
+    await assertFails(setDoc(account, { projectCount: 1, lastProjectId: 'p1' }));
+    await assertFails(setDoc(account, { projectCount: 3, lastProjectId: 'p3' }));
+    await assertFails(deleteDoc(account));
+    expect(await accountCount(db, ALICE)).toBe(2);
+  });
+
+  test('the rules refuse a project above the limit, even if the editor is bypassed', async () => {
+    const db = actAs(ALICE);
+    for (let i = 1; i <= MAX_PROJECTS; i++) {
+      await createCounted(db, ALICE, 'p' + i, i);
+    }
+
+    await assertFails(createCounted(db, ALICE, 'extra', MAX_PROJECTS + 1));
+    await assertFails(createCounted(db, ALICE, 'extra', MAX_PROJECTS));
+  });
+
+  test('projects saved before the count existed can still be saved, opened and deleted', async () => {
+    await testEnv.withSecurityRulesDisabled(async context => {
+      const admin = context.firestore();
+      await setDoc(doc(admin, 'users', ALICE, 'projects', 'old1'), { ...validProject(), size: 3 });
+      await setDoc(doc(admin, 'users', ALICE, 'projects', 'old1', 'chunks', 's1_0'), {
+        saveId: 's1', index: 0, data: Bytes.fromUint8Array(makeBytes(3, 23)),
+      });
+      await setDoc(doc(admin, 'users', ALICE, 'projects', 'old2'), validProject());
+    });
+    const db = actAs(ALICE);
+
+    expect((await loadCloudProject(ALICE, 'old1')).size).toBe(3);
+    await saveCloudProject(ALICE, 'old1', 'Old, saved again', new Blob([makeBytes(5, 24)]));
+    expect(await accountCount(db, ALICE)).toBeUndefined();
+
+    // A new project starts the count. Deleting the old ones then never takes it below zero.
+    const created = newCloudProjectId(ALICE);
+    await saveCloudProject(ALICE, created, 'New', new Blob([makeBytes(5, 25)]));
+    await deleteCloudProject(ALICE, 'old1');
+    await deleteCloudProject(ALICE, 'old2');
+    expect(await accountCount(db, ALICE)).toBe(0);
+    await deleteCloudProject(ALICE, created);
+
+    expect(await listCloudProjects(ALICE)).toHaveLength(0);
+  });
+});
+
 withEmulator('access rules', () => {
   test('a user cannot list, open, replace or delete the projects of another user', async () => {
     actAs(ALICE);
@@ -234,8 +335,9 @@ withEmulator('access rules', () => {
   test('project documents with an unexpected shape are refused', async () => {
     const db = actAs(ALICE);
     const project = doc(db, 'users', ALICE, 'projects', 'p1');
-    const valid = { name: 'Ok', size: 10, updatedAt: serverTimestamp(), saveId: 's1', chunkCount: 1 };
+    const valid = validProject();
 
+    await assertSucceeds(createCounted(db, ALICE, 'p1', 1));
     await assertSucceeds(setDoc(project, valid));
     await assertFails(setDoc(project, { ...valid, extra: 'field' }));
     await assertFails(setDoc(project, { ...valid, name: 'x'.repeat(201) }));

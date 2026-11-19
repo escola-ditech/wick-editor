@@ -22,8 +22,10 @@ import VideoExport from './export/VideoExport';
 import GIFExport from './export/GIFExport';
 import GIFImport from './import/GIFImport';
 import AudioExport from './export/AudioExport';
-import { isFirebaseConfigured, signInWithGoogle, signOutUser } from '../cloud/firebase';
-import { saveCloudProject, listCloudProjects, loadCloudProject, deleteCloudProject, newCloudProjectId } from '../cloud/cloudProjects';
+import {
+  isFirebaseConfigured, signInWithGoogle, signOutUser,
+  saveCloudProject, listCloudProjects, loadCloudProject, deleteCloudProject, newCloudProjectId,
+} from '../cloud/cloud';
 
 // localStorage key holding the id of the user whose work is in the autosave ('' if nobody was signed in).
 const AUTOSAVE_OWNER_KEY = 'wickEditorAutosaveOwner';

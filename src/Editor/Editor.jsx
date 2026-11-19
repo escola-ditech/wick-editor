@@ -52,14 +52,17 @@ import Toolbox from './Panels/Toolbox/Toolbox';
 import AssetLibrary from './Panels/AssetLibrary/AssetLibrary';
 import Outliner from './Panels/Outliner/Outliner';
 import OutlinerExpandButton from './Panels/OutlinerExpandButton/OutlinerExpandButton';
-import WickCodeEditor from './PopOuts/WickCodeEditor/WickCodeEditor';
+import LazyComponent from './Util/LazyComponent/LazyComponent';
 
 import EditorWrapper from './EditorWrapper';
-import { onUserChange } from '../cloud/firebase';
+import { onUserChange } from '../cloud/cloud';
 
 import { version } from '../../package.json';
 
 import classNames from 'classnames';
+
+// The code editor is large, so its code is downloaded separately from the rest of the editor.
+const loadCodeEditor = () => import('./PopOuts/WickCodeEditor/WickCodeEditor');
 
 class Editor extends EditorCore {
   constructor () {
@@ -279,6 +282,9 @@ class Editor extends EditorCore {
     });
 
     this.watchForHover();
+
+    // Download the code editor once the editor is idle, so it opens right away and also works offline.
+    (window.requestIdleCallback || window.setTimeout)(() => loadCodeEditor().catch(() => {}));
 
     // Keep track of the signed in user.
     let firstCheck = true;
@@ -610,6 +616,11 @@ class Editor extends EditorCore {
    * Opens and closes the code editor depending on the state of the codeEditor.
    * @param {boolean} state - Optional. True will open the code editor, false will close.
    */
+  onCodeEditorLoadError = () => {
+    this.toggleCodeEditor(false);
+    this.toast('Could not load the code editor. Check your connection and try again.', 'error');
+  }
+
   toggleCodeEditor = (state) => {
     if (state === undefined || (typeof state !== "boolean")) {
       state = !this.state.codeEditorOpen;
@@ -1272,7 +1283,9 @@ class Editor extends EditorCore {
             </ReflexContainer>
           </div>
           {this.state.codeEditorOpen &&
-            <WickCodeEditor
+            <LazyComponent
+              load={loadCodeEditor}
+              onLoadError={this.onCodeEditorLoadError}
               selectionType={this.getSelectionType()}
               codeEditorWindowProperties={this.state.codeEditorWindowProperties}
               updateCodeEditorWindowProperties={this.updateCodeEditorWindowProperties}

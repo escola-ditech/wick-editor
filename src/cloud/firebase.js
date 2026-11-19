@@ -1,12 +1,12 @@
 /**
  * Firebase setup and Google authentication.
  *
- * The configuration is read from VITE_FIREBASE_* environment variables
- * (see .env). If they are not set, the editor keeps working without accounts
- * and saves/loads projects as files only.
+ * This file downloads the Firebase SDK. The editor reaches it through ./cloud.js,
+ * which loads it in the background. The configuration is in ./config.js.
  */
 
 import { initializeApp } from 'firebase/app';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -15,19 +15,21 @@ import {
   signOut,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { appCheckSiteKey, firebaseConfig, isFirebaseConfigured } from './config';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId
-);
+export { isFirebaseConfigured };
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+
+// App Check proves to Firebase that requests come from this site and not from a script
+// using the public API key. It only blocks anything once enforcement is turned on in the
+// Firebase console.
+if (app && appCheckSiteKey) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;

@@ -29,15 +29,27 @@ import ExportMedia from '../ExportMedia/ExportMedia';
 import SettingsModal from '../SettingsModal/SettingsModal';
 import BuiltinLibrary from '../BuiltinLibrary/BuiltinLibrary';
 import EditorInfo from '../EditorInfo/EditorInfo';
-import OpenSourceNotices from '../OpenSourceNotices/OpenSourceNotices';
 import MobileMenu from '../MobileMenu/MobileMenu';
 import SavedProjects from '../SavedProjects/SavedProjects';
 import SimpleProjectSettings from '../SimpleProjectSettings/SimpleProjectSettings';
 import SupportUs from '../SupportUs/SupportUs';
+import LazyComponent from 'Editor/Util/LazyComponent/LazyComponent';
+
+// The license texts are large and rarely read, so they are only downloaded when asked for.
+const loadOpenSourceNotices = () => import('../OpenSourceNotices/OpenSourceNotices');
 
 class ModalHandler extends Component {
+  onNoticesLoadError = () => {
+    this.noticesWereOpened = false;
+    this.props.closeActiveModal();
+    this.props.toast('Could not load the open source notices. Check your connection and try again.', 'error');
+  }
+
   render() {
     let isMobile = this.props.getRenderSize() === "small";
+
+    // Once opened, the notices stay in the page like the other windows, so closing looks the same.
+    this.noticesWereOpened = this.noticesWereOpened || this.props.activeModalName === 'OpenSourceNotices';
     return (
       <div>
         <MakeAnimated
@@ -138,12 +150,14 @@ class ModalHandler extends Component {
           open={this.props.activeModalName === 'EditorInfo'}
           editorVersion={this.props.editorVersion}
         />
-        <OpenSourceNotices
+        {this.noticesWereOpened && <LazyComponent
+          load={loadOpenSourceNotices}
+          onLoadError={this.onNoticesLoadError}
           isMobile={isMobile}
           openModal={this.props.openModal}
           toggle={this.props.closeActiveModal}
           open={this.props.activeModalName === 'OpenSourceNotices'}
-          />
+          />}
         <MobileMenu
           openProjectFileDialog={this.props.openProjectFileDialog}
           openNewProjectConfirmation={this.props.openNewProjectConfirmation}

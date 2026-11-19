@@ -3,6 +3,10 @@ rules_version = '2';
 // Projects saved by signed in users. See src/cloud/cloudProjects.js for the layout.
 // Each user can only reach their own projects, and only documents with the
 // expected shape and size can be written. Anything not matched here is denied.
+//
+// The number of projects of an account is limited. Rules cannot count documents,
+// so the account document (users/{uid}) keeps the count, and a project can only be
+// created or deleted together with the matching change to it.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -30,13 +34,64 @@ service cloud.firestore {
         && chunkId == data.saveId + '_' + string(data.index);
     }
 
-    match /users/{uid}/projects/{projectId} {
-      allow read, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid) && isValidProject(request.resource.data);
+    function accountPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
 
-      match /chunks/{chunkId} {
-        allow read, delete: if isOwner(uid);
-        allow create, update: if isOwner(uid) && isValidChunk(chunkId, request.resource.data);
+    function projectPath(uid, projectId) {
+      return /databases/$(database)/documents/users/$(uid)/projects/$(projectId);
+    }
+
+    // Projects counted before this request. Accounts that never created a project
+    // since the count was introduced have no account document.
+    function projectCount(uid) {
+      return exists(accountPath(uid)) ? get(accountPath(uid)).data.projectCount : 0;
+    }
+
+    // Up to 50 projects per account. lastProjectId is the project whose creation or
+    // deletion changed the count.
+    function isValidAccount(data) {
+      return data.keys().hasOnly(['projectCount', 'lastProjectId'])
+        && data.keys().hasAll(['projectCount', 'lastProjectId'])
+        && data.projectCount is int && data.projectCount >= 0 && data.projectCount <= 50
+        && data.lastProjectId is string && data.lastProjectId.size() >= 1 && data.lastProjectId.size() <= 100;
+    }
+
+    // True if this request also changes the count by the given amount because of this project.
+    function isCounted(uid, projectId, change) {
+      let account = getAfter(accountPath(uid)).data;
+      return account.projectCount == projectCount(uid) + change && account.lastProjectId == projectId;
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+
+      // The count only changes by one, in the same request that creates or deletes that project.
+      allow create, update: if isOwner(uid) && isValidAccount(request.resource.data) && (
+        (
+          request.resource.data.projectCount == projectCount(uid) + 1
+          && !exists(projectPath(uid, request.resource.data.lastProjectId))
+          && existsAfter(projectPath(uid, request.resource.data.lastProjectId))
+        ) || (
+          request.resource.data.projectCount == projectCount(uid) - 1
+          && exists(projectPath(uid, request.resource.data.lastProjectId))
+          && !existsAfter(projectPath(uid, request.resource.data.lastProjectId))
+        )
+      );
+
+      match /projects/{projectId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidProject(request.resource.data) && isCounted(uid, projectId, 1);
+        allow update: if isOwner(uid) && isValidProject(request.resource.data);
+
+        // Projects from before the count was introduced are not counted, so they can
+        // still be deleted when the count is zero.
+        allow delete: if isOwner(uid) && (projectCount(uid) == 0 || isCounted(uid, projectId, -1));
+
+        match /chunks/{chunkId} {
+          allow read, delete: if isOwner(uid);
+          allow create, update: if isOwner(uid) && isValidChunk(chunkId, request.resource.data);
+        }
       }
     }
   }

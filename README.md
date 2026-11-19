@@ -80,6 +80,10 @@ Signing in with Google and saving projects to the user's account uses Firebase. 
 
 3) Copy `.env.example` to `.env`, fill in the `VITE_FIREBASE_*` values and restart `npm start`. The `.env` file is not committed.
 
+4) Recommended for a public site, so the database can only be used from it:
+   - In the Google Cloud console (APIs & Services > Credentials), restrict the browser API key to the addresses of the site (HTTP referrers).
+   - In the Firebase console, register the Web app in App Check with reCAPTCHA Enterprise, set the site key as `VITE_FIREBASE_APPCHECK_SITE_KEY` in `.env`, and once requests show up as verified, enforce App Check for Firestore.
+
 ### Running the tests
 
 | Command | What it tests | Needs |

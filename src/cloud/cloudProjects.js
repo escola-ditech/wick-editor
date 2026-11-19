@@ -2,12 +2,17 @@
  * Stores .wick files in the signed in user's account using Firestore.
  *
  * Layout:
+ *   users/{uid}                                       -> { projectCount, lastProjectId }
  *   users/{uid}/projects/{projectId}                  -> { name, size, updatedAt, saveId, chunkCount }
  *   users/{uid}/projects/{projectId}/chunks/{saveId_i} -> { saveId, index, data }
  *
  * A Firestore document can't be larger than 1 MiB, so the file is split into chunks.
  * Every save writes its chunks under a new saveId and only then points the project
  * document at them, so a save that fails halfway never corrupts the previous one.
+ *
+ * The account document counts the projects, because firestore.rules cannot count
+ * documents: a project can only be created or deleted together with the matching
+ * change to the count, which is how the limit of projects per account is enforced.
  */
 
 import {
@@ -20,6 +25,7 @@ import {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   where,
@@ -29,7 +35,7 @@ import { db } from './firebase';
 const CHUNK_SIZE = 900 * 1024;
 const PARALLEL_WRITES = 4;
 
-// Limits per account. firestore.rules enforces the same project size and name length.
+// Limits per account. firestore.rules enforces the same limits.
 export const MAX_PROJECT_SIZE = 50 * 1024 * 1024;
 export const MAX_PROJECTS = 50;
 const MAX_NAME_LENGTH = 200;
@@ -42,6 +48,10 @@ function limitError(code, message) {
 
 function projectsCollection(uid) {
   return collection(db, 'users', uid, 'projects');
+}
+
+function accountDoc(uid) {
+  return doc(db, 'users', uid);
 }
 
 function projectDoc(uid, projectId) {
@@ -94,9 +104,12 @@ export async function saveCloudProject(uid, projectId, name, file) {
 
   const previous = (await getDoc(projectDoc(uid, projectId))).data();
 
+  // Checked before uploading anything. Projects from before the account document
+  // existed are not in its count, so the saved projects are counted as well.
   if (!previous) {
+    const account = (await getDoc(accountDoc(uid))).data();
     const saved = (await getCountFromServer(projectsCollection(uid))).data().count;
-    if (saved >= MAX_PROJECTS) {
+    if (Math.max(saved, account ? account.projectCount : 0) >= MAX_PROJECTS) {
       throw limitError('too-many-projects', 'The account has too many saved projects.');
     }
   }
@@ -112,12 +125,25 @@ export async function saveCloudProject(uid, projectId, name, file) {
   }
   await runLimited(writes);
 
-  await setDoc(projectDoc(uid, projectId), {
-    name: String(name).slice(0, MAX_NAME_LENGTH),
-    size: bytes.length,
-    updatedAt: serverTimestamp(),
-    saveId,
-    chunkCount,
+  await runTransaction(db, async transaction => {
+    const isNew = !(await transaction.get(projectDoc(uid, projectId))).exists();
+
+    if (isNew) {
+      const account = (await transaction.get(accountDoc(uid))).data();
+      const count = account ? account.projectCount : 0;
+      if (count >= MAX_PROJECTS) {
+        throw limitError('too-many-projects', 'The account has too many saved projects.');
+      }
+      transaction.set(accountDoc(uid), { projectCount: count + 1, lastProjectId: projectId });
+    }
+
+    transaction.set(projectDoc(uid, projectId), {
+      name: String(name).slice(0, MAX_NAME_LENGTH),
+      size: bytes.length,
+      updatedAt: serverTimestamp(),
+      saveId,
+      chunkCount,
+    });
   });
 
   // The new save is in place, the chunks of the previous one are no longer needed.
@@ -188,5 +214,15 @@ export async function loadCloudProject(uid, projectId) {
 export async function deleteCloudProject(uid, projectId) {
   const chunks = await getDocs(collection(projectDoc(uid, projectId), 'chunks'));
   await runLimited(chunks.docs.map(d => () => deleteDoc(d.ref)));
-  await deleteDoc(projectDoc(uid, projectId));
+
+  await runTransaction(db, async transaction => {
+    if (!(await transaction.get(projectDoc(uid, projectId))).exists()) return;
+
+    // Projects from before the account document existed are not in its count.
+    const account = (await transaction.get(accountDoc(uid))).data();
+    if (account && account.projectCount > 0) {
+      transaction.set(accountDoc(uid), { projectCount: account.projectCount - 1, lastProjectId: projectId });
+    }
+    transaction.delete(projectDoc(uid, projectId));
+  });
 }
