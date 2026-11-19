@@ -15,6 +15,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   orderBy,
@@ -27,6 +28,17 @@ import { db } from './firebase';
 
 const CHUNK_SIZE = 900 * 1024;
 const PARALLEL_WRITES = 4;
+
+// Limits per account. firestore.rules enforces the same project size and name length.
+export const MAX_PROJECT_SIZE = 50 * 1024 * 1024;
+export const MAX_PROJECTS = 50;
+const MAX_NAME_LENGTH = 200;
+
+function limitError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
 
 function projectsCollection(uid) {
   return collection(db, 'users', uid, 'projects');
@@ -55,18 +67,39 @@ async function runLimited(tasks) {
 }
 
 /**
- * Saves a .wick file to the user's account, replacing any previous save with the same id.
+ * Creates an id for a project that was never saved to the user's account.
  * @param {string} uid User id.
- * @param {string} projectId Id of the project (the wick project uuid).
+ * @returns {string}
+ */
+export function newCloudProjectId(uid) {
+  return doc(projectsCollection(uid)).id;
+}
+
+/**
+ * Saves a .wick file to the user's account, replacing any previous save with the same id.
+ * Fails with an error with code 'project-too-large' or 'too-many-projects' if a limit is hit.
+ * @param {string} uid User id.
+ * @param {string} projectId Id to save under, from newCloudProjectId or from a listed project.
  * @param {string} name Project name.
  * @param {Blob} file The .wick file.
  */
 export async function saveCloudProject(uid, projectId, name, file) {
+  if (file.size > MAX_PROJECT_SIZE) {
+    throw limitError('project-too-large', 'Project is too large to be saved.');
+  }
+
   const bytes = new Uint8Array(await file.arrayBuffer());
   const saveId = Date.now().toString(36);
   const chunkCount = Math.max(1, Math.ceil(bytes.length / CHUNK_SIZE));
 
   const previous = (await getDoc(projectDoc(uid, projectId))).data();
+
+  if (!previous) {
+    const saved = (await getCountFromServer(projectsCollection(uid))).data().count;
+    if (saved >= MAX_PROJECTS) {
+      throw limitError('too-many-projects', 'The account has too many saved projects.');
+    }
+  }
 
   const writes = [];
   for (let i = 0; i < chunkCount; i++) {
@@ -80,7 +113,7 @@ export async function saveCloudProject(uid, projectId, name, file) {
   await runLimited(writes);
 
   await setDoc(projectDoc(uid, projectId), {
-    name,
+    name: String(name).slice(0, MAX_NAME_LENGTH),
     size: bytes.length,
     updatedAt: serverTimestamp(),
     saveId,

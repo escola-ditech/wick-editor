@@ -24,7 +24,10 @@ import GIFExport from './export/GIFExport';
 import GIFImport from './import/GIFImport';
 import AudioExport from './export/AudioExport';
 import { isFirebaseConfigured, signInWithGoogle, signOutUser } from '../cloud/firebase';
-import { saveCloudProject, listCloudProjects, loadCloudProject, deleteCloudProject } from '../cloud/cloudProjects';
+import { saveCloudProject, listCloudProjects, loadCloudProject, deleteCloudProject, newCloudProjectId } from '../cloud/cloudProjects';
+
+// localStorage key holding the id of the user whose work is in the autosave ('' if nobody was signed in).
+const AUTOSAVE_OWNER_KEY = 'wickEditorAutosaveOwner';
 
 class EditorCore extends Component {
 
@@ -994,8 +997,50 @@ class EditorCore extends Component {
 
   /**
    * Saves the current project to the signed in user's account.
+   *
+   * A project that was opened from the account (or already saved to it) is saved
+   * over its previous version. Any other project is saved as a new one, and the
+   * user is asked what to do if the account already has a project with that name.
    */
   saveProjectToCloud = () => {
+    let user = this.state.user;
+    let project = this.project;
+
+    if (this.cloudProjectId) {
+      this.uploadProjectToCloud(this.cloudProjectId);
+      return;
+    }
+
+    listCloudProjects(user.uid).then(projects => {
+      // The project may have been replaced while the list was loading.
+      if (this.project !== project) return;
+
+      let existing = projects.find(saved => saved.name === project.name);
+      if (!existing) {
+        this.uploadProjectToCloud(newCloudProjectId(user.uid));
+        return;
+      }
+
+      this.openWarningModal({
+        title: "Replace saved project?",
+        description: `Your account already has a project named "${project.name}". Replace it with this one, or keep both?`,
+        acceptAction: () => this.uploadProjectToCloud(existing.id),
+        cancelAction: () => this.uploadProjectToCloud(newCloudProjectId(user.uid)),
+        finalAction: () => {},
+        acceptText: "Replace",
+        cancelText: "Keep both",
+      });
+    }).catch(error => {
+      console.error(error);
+      this.toast('Could not save project to your account. Please try again.', 'error');
+    });
+  }
+
+  /**
+   * Uploads the current project to the signed in user's account.
+   * @param {string} cloudProjectId - id to save the project under. An existing project with this id is replaced.
+   */
+  uploadProjectToCloud = (cloudProjectId) => {
     let user = this.state.user;
     let project = this.project;
 
@@ -1004,9 +1049,15 @@ class EditorCore extends Component {
 
     let fail = (error) => {
       error && console.error(error);
-      this.updateToast(toastID, {
-        type: 'error',
-        text: "Could not save project to your account. Please try again." });
+
+      let text = "Could not save project to your account. Please try again.";
+      if (error && error.code === 'project-too-large') {
+        text = "This project is too large to be saved to your account. Use download to save it as a file.";
+      } else if (error && error.code === 'too-many-projects') {
+        text = "Your account is full. Delete a saved project and try again.";
+      }
+
+      this.updateToast(toastID, { type: 'error', text: text });
       this.hideWaitOverlay();
     }
 
@@ -1017,7 +1068,12 @@ class EditorCore extends Component {
       }
 
       file = new Blob([file], {type: 'application/wick'});
-      saveCloudProject(user.uid, project.uuid, project.name, file).then(() => {
+      saveCloudProject(user.uid, cloudProjectId, project.name, file).then(() => {
+        // From now on, saving this project replaces the version that was just saved.
+        if (this.project === project) {
+          this.cloudProjectId = cloudProjectId;
+        }
+
         this.updateToast(toastID, {
           type: 'success',
           text: "Successfully saved project to your account." });
@@ -1066,14 +1122,31 @@ class EditorCore extends Component {
 
     this.openWarningModal({
       title: "Sign out?",
-      description: `You are signed in as ${user.email || user.displayName}. After signing out, projects are saved and opened as files.`,
+      description: `You are signed in as ${user.email || user.displayName}. The current project will be closed and any unsaved changes will be lost.`,
       acceptAction: () => {
         signOutUser().then(() => this.toast('Signed out.', 'info'));
       },
       cancelAction: () => {},
+      finalAction: () => {},
       acceptText: "Sign out",
       cancelText: "Cancel",
     });
+  }
+
+  /**
+   * Removes everything that belongs to the user that just signed out from the
+   * editor and from this browser: the open project and its autosave.
+   */
+  closeProjectOnSignOut = () => {
+    this.clearAllAutoSavedProjects();
+    window.Wick.FileCache.clear();
+
+    if (this.state.activeModalName === 'SavedProjects') {
+      this.closeActiveModal();
+    }
+    this.setState({ localSavedFiles: [] });
+
+    this.setupNewProject();
   }
 
   /**
@@ -1400,12 +1473,14 @@ class EditorCore extends Component {
   /**
    * Imports a wick file into the editor.
    * @param {File} file Zipped wick file to import.
+   * @param {string} cloudProjectId If the file was opened from the user's account, the id it is saved under.
    */
-  importProjectAsWickFile = (file) => {
+  importProjectAsWickFile = (file, cloudProjectId) => {
     this.showWaitOverlay();
     window.Wick.WickFile.fromWickFile(file, project => {
       if(project) {
         this.setupNewProject(project);
+        this.cloudProjectId = (typeof cloudProjectId === 'string') ? cloudProjectId : null;
         this.toast(`Opened ${file.name || "project"} successfully.`, 'success');
       } else {
         this.toast('Could not open project.', 'error');
@@ -1423,6 +1498,9 @@ class EditorCore extends Component {
     // if (!project) return;
     this.resetEditorForLoad();
     this.project = project || new window.Wick.Project();
+
+    // A project is only tied to a save in the user's account after being opened from or saved to it.
+    this.cloudProjectId = null;
     this.project.selection.clear();
 
     // Attach error handling messages
@@ -1455,6 +1533,15 @@ class EditorCore extends Component {
   }
 
   showAutosavedProjects = () => {
+    // The autosave is stored in the browser. Never offer it to someone other than
+    // the user who was signed in when it was made.
+    let owner = window.localStorage.getItem(AUTOSAVE_OWNER_KEY) || '';
+    let currentUser = this.state.user ? this.state.user.uid : '';
+    if (owner !== '' && owner !== currentUser) {
+      this.clearAllAutoSavedProjects();
+      return;
+    }
+
     this.doesAutoSavedProjectExist(exists => {
       if (exists) {
         this.queueModal('AutosaveWarning');
@@ -1594,7 +1681,10 @@ class EditorCore extends Component {
     if (this.state.previewPlaying) return;
     if (this.state.activeModalName !== null) return;
 
+    let owner = this.state.user ? this.state.user.uid : '';
+
     window.Wick.AutoSave.save(this.project, () => {
+      window.localStorage.setItem(AUTOSAVE_OWNER_KEY, owner);
       callback();
     });
   }
@@ -1632,6 +1722,31 @@ class EditorCore extends Component {
   /**
    * Clears any autosaved project from local storage.
    */
+  /**
+   * Removes every autosaved project, and the files they use, from this browser.
+   * @param {function} callback - called when done.
+   */
+  clearAllAutoSavedProjects = (callback) => {
+    let storage = window.localforage;
+    let listKey = window.Wick.AutoSave.AUTOSAVES_LIST_KEY;
+    let prefixes = [
+      window.Wick.AutoSave.AUTOSAVE_DATA_PREFIX,
+      window.Wick.FileCache.FILE_LOCALFORAGE_KEY_PREFIX,
+    ];
+
+    storage.keys().then(keys => {
+      let autosaveKeys = keys.filter(key => {
+        return key === listKey || prefixes.some(prefix => key.startsWith(prefix));
+      });
+      return Promise.all(autosaveKeys.map(key => storage.removeItem(key)));
+    }).catch(error => {
+      console.error(error);
+    }).then(() => {
+      window.localStorage.removeItem(AUTOSAVE_OWNER_KEY);
+      callback && callback();
+    });
+  }
+
   clearAutoSavedProject = (callback) => {
     window.Wick.AutoSave.delete(this.project.uuid, () => {
       callback();
@@ -1899,7 +2014,7 @@ class EditorCore extends Component {
     if (fileEntry.cloud) {
       this.showWaitOverlay();
       loadCloudProject(this.state.user.uid, fileEntry.id).then(file => {
-        this.importProjectAsWickFile(file);
+        this.importProjectAsWickFile(file, fileEntry.id);
       }).catch(error => {
         console.error(error);
         this.toast('Could not open project from your account.', 'error');

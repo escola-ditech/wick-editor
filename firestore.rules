@@ -1,10 +1,43 @@
 rules_version = '2';
 
+// Projects saved by signed in users. See src/cloud/cloudProjects.js for the layout.
+// Each user can only reach their own projects, and only documents with the
+// expected shape and size can be written. Anything not matched here is denied.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each user can only read and write their own projects.
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Up to 50 MB per project, split into chunks of up to 900 KB.
+    function isValidProject(data) {
+      return data.keys().hasOnly(['name', 'size', 'updatedAt', 'saveId', 'chunkCount'])
+        && data.keys().hasAll(['name', 'size', 'updatedAt', 'saveId', 'chunkCount'])
+        && data.name is string && data.name.size() <= 200
+        && data.size is int && data.size >= 0 && data.size <= 52428800
+        && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 60
+        && data.saveId is string && data.saveId.size() >= 1 && data.saveId.size() <= 40
+        && data.updatedAt == request.time;
+    }
+
+    function isValidChunk(chunkId, data) {
+      return data.keys().hasOnly(['saveId', 'index', 'data'])
+        && data.keys().hasAll(['saveId', 'index', 'data'])
+        && data.saveId is string && data.saveId.size() >= 1 && data.saveId.size() <= 40
+        && data.index is int && data.index >= 0 && data.index < 60
+        && data.data is bytes && data.data.size() <= 921600
+        && chunkId == data.saveId + '_' + string(data.index);
+    }
+
+    match /users/{uid}/projects/{projectId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && isValidProject(request.resource.data);
+
+      match /chunks/{chunkId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidChunk(chunkId, request.resource.data);
+      }
     }
   }
 }

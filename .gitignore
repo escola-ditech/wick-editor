@@ -28,3 +28,7 @@ yarn-error.log*
 
 # docs
 engine/docs/*
+
+# firebase emulator
+firestore-debug.log
+firebase-debug.log

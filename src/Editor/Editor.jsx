@@ -269,14 +269,26 @@ class Editor extends EditorCore {
     console.log("Project Mounted");
     this.hidePreloader();
     this.onWindowResize();
-    if(!this.tryToParseProjectURL()) {
-      this.showAutosavedProjects();
-    }
+    let offerAutosave = !this.tryToParseProjectURL();
 
     this.watchForHover();
 
     // Keep track of the signed in user.
-    this.stopWatchingUser = onUserChange(user => this.setState({ user }));
+    let firstCheck = true;
+    this.stopWatchingUser = onUserChange(user => {
+      let previousUser = this.state.user;
+      let isFirstCheck = firstCheck;
+      firstCheck = false;
+
+      this.setState({ user }, () => {
+        if (isFirstCheck) {
+          // The autosave belongs to a user, so it can only be offered once we know who is signed in.
+          offerAutosave && this.showAutosavedProjects();
+        } else if (previousUser && (!user || user.uid !== previousUser.uid)) {
+          this.closeProjectOnSignOut();
+        }
+      });
+    });
   }
 
   componentWillUnmount = () => {

@@ -106,6 +106,7 @@
     "build-engine": "cd engine; mkdir dist/; gulp; cp -a dist/. ../public/corelibs/wick-engine/",
     "build-engine-windows": "cd engine & mkdir dist  2>nul &    gulp & xcopy /EY dist\\. ..\\public\\corelibs\\wick-engine\\",
     "test": "react-scripts test",
+    "test:cloud": "npx -y firebase-tools emulators:exec --only firestore --project demo-wick-editor \"react-scripts test --watchAll=false src/cloud\"",
     "engine-tests": "cd engine; python -m SimpleHTTPServer 9999",
     "predeploy": "npm run build",
     "editor-deploy": "npm run build; rm -r ../wick-site/public/editor; mkdir ../wick-site/public/editor; cp -r build/* ../wick-site/public/editor; cd ../wick-site/public/editor; rm CNAME; echo 'wickeditor.com/editor/' > CNAME; git add .; git commit -m 'update release build'; git push --force;",
@@ -133,6 +134,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
     "dotenv": "^8.2.0",
     "electron": "^7.2.4",
     "electron-builder": "^22.4.1",
