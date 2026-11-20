@@ -187,9 +187,7 @@ gulp.task("default", function() {
       /* Copy ZIP export resources to dist folder */
       var zipindex = fs.readFileSync('src/export/zip/index.html', 'utf8');
       var preloadjs = fs.readFileSync('src/export/zip/preloadjs.min.js', 'utf8');
-      var projecthtml = fs.readFileSync('src/export/html/project.html', 'utf8');
       fs.writeFileSync('dist/index.html', zipindex);
       fs.writeFileSync('dist/preloadjs.min.js', preloadjs);
-      fs.writeFileSync('dist/project.html', projecthtml);
     });
 });

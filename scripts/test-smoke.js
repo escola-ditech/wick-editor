@@ -139,8 +139,12 @@ async function main() {
       for (const modal of modals) {
         const isOpen = await page.evaluate(async (name) => {
           window.editor.openModal(name);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          const shown = Boolean(document.querySelector('.ReactModal__Content'));
+          // Some windows download their code when first opened, so this waits for a while.
+          let shown = false;
+          for (let attempt = 0; attempt < 30 && !shown; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            shown = Boolean(document.querySelector('.ReactModal__Content'));
+          }
           window.editor.openModal(null);
           await new Promise(resolve => setTimeout(resolve, 100));
           return shown;
