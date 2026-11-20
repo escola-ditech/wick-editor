@@ -18,7 +18,7 @@
  */
 
 import React, { Component } from 'react';
-import { DragSource } from 'react-dnd';
+import { useDrag } from 'react-dnd';
 import './_asset.scss';
 import DragDropTypes from 'Editor/DragDropTypes.js';
 import ToolIcon from 'Editor/Util/ToolIcon/ToolIcon';
@@ -35,15 +35,6 @@ const assetSource = {
 
     return info;
   },
-}
-
-/**
- * Specifies which props to inject into your component.
- */
-function collect(connect, monitor) {
-  return {
-    connectDragSource: connect.dragSource(),
-  }
 }
 
 class Asset extends Component {
@@ -83,14 +74,18 @@ class Asset extends Component {
     }
   }
 
+  connectDragSourceNode = (node) => {
+    this.props.connectDragSource(node);
+  }
+
   render() {
     // These props are injected by React DnD, as defined by the `collect` function above:
-    const { connectDragSource } = this.props;
 
     let icon = this.getIcon(this.props.asset.classname);
 
-    return connectDragSource (
-      <div 
+    return (
+      <div
+      ref={this.connectDragSourceNode}
       className={classNames("asset-item", {"asset-selected": this.props.isSelected})}>
       <button 
         className="select"
@@ -121,4 +116,14 @@ class Asset extends Component {
   }
 }
 
-export default DragSource(DragDropTypes.GET_ASSET_TYPE, assetSource, collect)(Asset)
+/**
+ * An asset that can be dragged onto the canvas or the timeline.
+ */
+export default function DraggableAsset (props) {
+  const [, connectDragSource] = useDrag({
+    type: DragDropTypes.GET_ASSET_TYPE(props),
+    item: () => assetSource.beginDrag(props),
+  });
+
+  return <Asset {...props} connectDragSource={connectDragSource} />;
+}

@@ -27,14 +27,18 @@ import { Console } from 'console-feed'
 
 // Import Ace Editor and themes.
 import AceEditor from 'react-ace';
-import 'brace/mode/javascript';
-import 'brace/ext/searchbox';
+import ace from 'ace-builds/src-noconflict/ace';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/ext-searchbox';
 
-import 'brace/theme/monokai';
-import 'brace/theme/cobalt';
-import 'brace/theme/dracula';
-import 'brace/theme/eclipse';
-import 'brace/theme/github';
+import 'ace-builds/src-noconflict/theme-monokai';
+import 'ace-builds/src-noconflict/theme-cobalt';
+import 'ace-builds/src-noconflict/theme-dracula';
+import 'ace-builds/src-noconflict/theme-eclipse';
+import 'ace-builds/src-noconflict/theme-github';
+
+// The code that checks scripts for mistakes while typing runs in a separate file (a web worker).
+import javascriptWorkerUrl from 'ace-builds/src-noconflict/worker-javascript?url';
 
 import 'Editor/styles/PopOuts/_wickcodeeditor.css';
 
@@ -42,6 +46,8 @@ import capitalize from 'Editor/Util/DataFunctions/capitalize';
 import ToolIcon from '../../Util/ToolIcon/ToolIcon';
 
 import classNames from 'classnames';
+
+ace.config.setModuleUrl('ace/mode/javascript_worker', javascriptWorkerUrl);
 
 const editorThemes = [
   {
@@ -96,7 +102,7 @@ export default function WickCodeEditor(props) {
   /**
    * To run when the console is resized. Should update
    * the size of the console in the main editor.
-   * @param {object} console 
+   * @param {object} console
    */
   function resizeConsole(console) {
     props.updateCodeEditorWindowProperties({
@@ -116,7 +122,7 @@ export default function WickCodeEditor(props) {
 
   /**
    * To run when the script changes.
-   * @param {script} newScript - New script to change. 
+   * @param {script} newScript - New script to change.
    */
   function scriptOnChange(newScript) {
     if (props.script) {
@@ -185,8 +191,8 @@ export default function WickCodeEditor(props) {
   }
 
   /**
-   * Sets code editor font size. 
-   * @param {*} size 
+   * Sets code editor font size.
+   * @param {*} size
    */
   function setCodeEditorFontSize(size) {
     props.updateCodeEditorWindowProperties({
@@ -369,11 +375,11 @@ export default function WickCodeEditor(props) {
       <div className="wick-code-editor-drag-handle">
         <div className="wick-code-editor-icon">{"</>"}</div>
         <div className="we-code-editor-title">
-          Code Editor | 
+          Code Editor |
           { !props.error && <div className="we-code-editor-title-selected">
             {`editing ${props.selectionType}`}
             </div>
-          } 
+          }
           { props.error && <div className="we-code-editor-title-error">
                 {`error - line ${props.error.lineNumber}`}
               </div>

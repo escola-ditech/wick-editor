@@ -29,31 +29,35 @@ import soundIcon from 'resources/outliner-icons/sound.svg';
 
 import classNames from 'classnames';
 
-let icons = {layer: layerIcon, frame: frameIcon, path: pathIcon, button: buttonIcon, 
+let icons = {layer: layerIcon, frame: frameIcon, path: pathIcon, button: buttonIcon,
   clip: clipIcon, text: textIcon, image: imageIcon};
 
-let images = {layer: layerImage, frame: frameImage, path: pathImage, button: buttonImage, 
+let images = {layer: layerImage, frame: frameImage, path: pathImage, button: buttonImage,
   clip: clipImage, text: textImage, image: imageImage};
 
-export const OutlinerObject = ({clearSelection, selectObjects, 
-  editScript, playhead, depth, maxDepth, display, highlighted, 
-  toggle, data, isActive, collapsedUUIDs, dragging, setDragging, 
+export const OutlinerObject = ({clearSelection, selectObjects,
+  editScript, playhead, depth, maxDepth, display, highlighted,
+  toggle, data, isActive, collapsedUUIDs, dragging, setDragging,
   setFocusObject, setActiveLayerIndex, moveSelection}) => {
 
   const ref = useRef(null);
 
+  const dragType = DragDropTypes.GET_OUTLINER_SOURCE({data});
   const [, drag, preview] = useDrag({
-    item: {
-      type: DragDropTypes.GET_OUTLINER_SOURCE({data}),
-      uuid: data.uuid,
-    },
-    begin: () => {
+    type: dragType,
+    // Called when the drag starts, returns what is being dragged.
+    item: () => {
+      const item = {
+        type: dragType,
+        uuid: data.uuid,
+      };
+
       setDragging(true);
 
       if (data.isSelected) {
-        return;
+        return item;
       }
-      
+
       clearSelection();
       selectObjects([data]);
 
@@ -64,6 +68,7 @@ export const OutlinerObject = ({clearSelection, selectObjects,
         setActiveLayerIndex(data.parentLayer.index);
       }
 
+      return item;
     },
     end: () => {
       setDragging(false);
@@ -118,7 +123,7 @@ export const OutlinerObject = ({clearSelection, selectObjects,
     hover: (item, monitor) => {
       const types = ['object', 'frame', 'layer'];
 
-      if (types.indexOf(item.type) === 
+      if (types.indexOf(item.type) ===
           types.indexOf(DragDropTypes.GET_OUTLINER_SOURCE({data}))) {
         // Drop above or below
         // Determine rectangle on screen
@@ -163,24 +168,24 @@ export const OutlinerObject = ({clearSelection, selectObjects,
     }
   }
 
-  const typeIcon = data.classname === 'Path' ? 
-                    icons[data.pathType] : 
+  const typeIcon = data.classname === 'Path' ?
+                    icons[data.pathType] :
                     icons[data.classname.toLowerCase()];
-  const typeDragImage = data.classname === 'Path' ? 
-                    images[data.pathType] : 
+  const typeDragImage = data.classname === 'Path' ?
+                    images[data.pathType] :
                     images[data.classname.toLowerCase()];
-  
+
   drop(ref)
 
   return (
   <>
   <DragPreviewImage connect={preview} src={typeDragImage}/>
-  <div 
+  <div
   ref={ref}
-  className={classNames("outliner-object-container", 
-  hoverLocation !== 'hover-middle' && isOverCurrent && hoverLocation)}> 
-    <div 
-    className={classNames("outliner-object", 
+  className={classNames("outliner-object-container",
+  hoverLocation !== 'hover-middle' && isOverCurrent && hoverLocation)}>
+    <div
+    className={classNames("outliner-object",
     {"object-selected": data.isSelected && !focused},
     {"object-dragging": dragging && (data.isSelected || data.parent.isSelected || data.parent.parent.isSelected) },
     {"highlighted": highlighted === data},
@@ -193,13 +198,13 @@ export const OutlinerObject = ({clearSelection, selectObjects,
       toggle(e, [], 'select')}}
     onFocus={() => setFocused(true)}
     onBlur={() => setFocused(false)}
-      
+
     onKeyPress={(e) => {
       if (e.which === 13 && e.ctrlKey){
         toggle(e, [], 'select');
       }
     }}  />
-    <OutlinerDropdown 
+    <OutlinerDropdown
     empty={empty}
     collapsed={collapsedUUIDs[data.uuid]}
     toggle={(e) => toggle(e, [], 'dropdown')}/>
@@ -210,7 +215,7 @@ export const OutlinerObject = ({clearSelection, selectObjects,
     alt={data.classname}
     />
 
-    {object_name && 
+    {object_name &&
     <span className="outliner-name">
       {object_name}
     </span>}
@@ -225,13 +230,13 @@ export const OutlinerObject = ({clearSelection, selectObjects,
       {(data.classname === 'Button' || data.classname === 'Clip') &&
         <OutlinerWidget key={Math.random()} onClick={() => {console.log("yangus"); setFocusObject(data)}} icon="edit-timeline" tooltip="Edit Timeline"/>
       }
-      {data.sound && 
+      {data.sound &&
         <img className="outliner-sound-icon" src={soundIcon} alt="sound"/>}
-      {data.hasContentfulScripts && 
-        <input 
-        type="image" 
-        className="outliner-script-icon" 
-        src={scriptIcon} 
+      {data.hasContentfulScripts &&
+        <input
+        type="image"
+        className="outliner-script-icon"
+        src={scriptIcon}
         alt="script"
         onClick={() => {
           clearSelection();
@@ -246,14 +251,14 @@ export const OutlinerObject = ({clearSelection, selectObjects,
         }}/>}
     </span>
     </div>
-    
 
-    {!empty && !collapsedUUIDs[data.uuid] && 
+
+    {!empty && !collapsedUUIDs[data.uuid] &&
     <div className="indentation">
       {children.map((object, i) => {
         if (data.classname === 'Frame') {
-          //reverse order of children of frames 
-          //so items rendered on top are on top 
+          //reverse order of children of frames
+          //so items rendered on top are on top
           //of list
           object = children[children.length - i - 1];
         }

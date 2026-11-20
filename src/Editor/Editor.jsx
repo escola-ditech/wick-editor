@@ -32,7 +32,7 @@ import { throttle } from 'underscore';
 import localForage from 'localforage';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
-import { SizeMe } from 'react-sizeme';
+import SizeWatcher from './Util/SizeWatcher/SizeWatcher';
 
 import HotKeyInterface from './hotKeyMap';
 import ActionMapInterface from './actionMap';
@@ -205,9 +205,7 @@ class Editor extends EditorCore {
     this.lastUsedTool = 'cursor';
 
     this.builtinPreviews = {};
-  }
 
-  UNSAFE_componentWillMount = () => {
     document.title =  `Wick Editor ${this.editorVersion}`;
     // Initialize "live" engine state
     this.project = new window.Wick.Project();
@@ -223,6 +221,30 @@ class Editor extends EditorCore {
     this.customHotKeysKey = "wickEditorcustomHotKeys";
     this.colorPickerTypeKey = "wickEditorColorPickerType";
 
+    // Setup the initial project state
+    this.state = {
+      ...this.state,
+      project: this.project.serialize(),
+      codeEditorWindowProperties: this.getDefaultCodeEditorProperties(),
+    };
+
+    // Leave Page warning.
+    window.onbeforeunload = function(event) {
+      // Don't show the warning if nothing has been done to the project
+      if(this.project.numUndoStates > 1) {
+          return null;
+      }
+
+      var confirmationMessage = 'Warning: All unsaved changes will be lost!';
+      (event || window.event).returnValue = confirmationMessage; //Gecko + IE
+      return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+    };
+  }
+
+  /**
+   * Loads the settings saved in this browser: custom hotkeys and the type of color picker.
+   */
+  loadSavedSettings = () => {
     // Set up custom hotkeys if they exist.
     localForage.getItem(this.customHotKeysKey).then(
       (customHotKeys) => {
@@ -245,26 +267,6 @@ class Editor extends EditorCore {
       }
     );
 
-
-
-    // Setup the initial project state
-    this.setState({
-      ...this.state,
-      project: this.project.serialize(),
-      codeEditorWindowProperties: this.getDefaultCodeEditorProperties(),
-    });
-
-    // Leave Page warning.
-    window.onbeforeunload = function(event) {
-      // Don't show the warning if nothing has been done to the project
-      if(this.project.numUndoStates > 1) {
-          return null;
-      }
-
-      var confirmationMessage = 'Warning: All unsaved changes will be lost!';
-      (event || window.event).returnValue = confirmationMessage; //Gecko + IE
-      return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
-    };
   }
 
 
@@ -756,8 +758,8 @@ class Editor extends EditorCore {
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
+      icon: false,
       className: (type + '-toast-background'),
-      bodyClassName: (type + '-toast-body'),
       progressClassName: (type + '-toast-progress'),
     };
 
@@ -779,7 +781,6 @@ class Editor extends EditorCore {
 
     if (options.type) {
       options.className = options.type + '-toast-background';
-      options.bodyClassName = options.type + '-toast-body';
     }
 
     if (!options.autoClose) {
@@ -1045,7 +1046,7 @@ class Editor extends EditorCore {
                         {/*Canvas*/}
                         <ReflexElement {...this.resizeProps}>
                           <DockedPanel>
-                            <SizeMe>{({ size }) => {
+                            <SizeWatcher>{() => {
                               this.project.view.render();
                               return (<Canvas
                                 editor={this}
@@ -1061,7 +1062,7 @@ class Editor extends EditorCore {
                                 importProjectAsWickFile={this.importProjectAsWickFile}
                                 onRef={ref => this.canvasComponent = ref}
                               />);}}
-                            </SizeMe>
+                            </SizeWatcher>
                             
                             <CanvasTransforms
                               onionSkinEnabled={this.project.onionSkinEnabled}

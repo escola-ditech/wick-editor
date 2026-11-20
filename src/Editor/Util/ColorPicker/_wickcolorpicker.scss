@@ -84,6 +84,17 @@
     background-color: white;
 }
 
+// Shows through transparent colors.
+.wick-color-picker-checkerboard {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-image: conic-gradient(rgba(0,0,0,.08) 25%, transparent 0 50%, rgba(0,0,0,.08) 0 75%, transparent 0);
+    background-size: 16px 16px;
+}
+
 .wick-color-picker-color-block-container {
     position: relative;
     width: $color-picker-bar-height;

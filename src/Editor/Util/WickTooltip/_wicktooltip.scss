@@ -1,0 +1,42 @@
+$tooltip-color: #265A87;
+$tooltip-arrow-size: 6px;
+
+.wick-tooltip {
+  z-index: 2000;
+  max-width: 220px;
+  padding: 8px 21px;
+  border-radius: 3px;
+  background-color: $tooltip-color;
+  color: #FFFFFF;
+  font-family: 'Nunito Sans';
+  font-size: 14px;
+  // The tooltip must never get between the mouse and what is below it.
+  pointer-events: none;
+}
+
+.wick-tooltip-arrow {
+  position: absolute;
+  width: $tooltip-arrow-size * 2;
+  height: $tooltip-arrow-size * 2;
+  border: $tooltip-arrow-size solid transparent;
+}
+
+.wick-tooltip-bottom > .wick-tooltip-arrow {
+  top: -$tooltip-arrow-size * 2;
+  border-bottom-color: $tooltip-color;
+}
+
+.wick-tooltip-top > .wick-tooltip-arrow {
+  bottom: -$tooltip-arrow-size * 2;
+  border-top-color: $tooltip-color;
+}
+
+.wick-tooltip-right > .wick-tooltip-arrow {
+  left: -$tooltip-arrow-size * 2;
+  border-right-color: $tooltip-color;
+}
+
+.wick-tooltip-left > .wick-tooltip-arrow {
+  right: -$tooltip-arrow-size * 2;
+  border-left-color: $tooltip-color;
+}

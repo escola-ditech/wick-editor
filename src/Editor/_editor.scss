@@ -32,7 +32,7 @@ body {
 .toolbox-container {
   height: $toolbox-height;
   transition-timing-function: ease-in-out;
-  transition: width .5s, height .5s; 
+  transition: width .5s, height .5s;
 }
 
 .toolbox-container-medium {
@@ -46,14 +46,14 @@ body {
 .editor-canvas-timeline-panel {
   height: calc(100% - #{$toolbox-height});
   transition-timing-function: ease-in-out;
-  transition: width .5s, height .5s; 
+  transition: width .5s, height .5s;
 }
 
 .editor-canvas-timeline-panel-medium {
   height: calc(100% - #{$medium-toolbox-height});
 }
 
-// Small not yet implemented, defaults to medium size. 
+// Small not yet implemented, defaults to medium size.
 .editor-canvas-timeline-panel-small {
   height: calc(100% - #{$medium-toolbox-height});
 }
@@ -113,8 +113,9 @@ body {
   font-size: 24px;
 }
 
-.info-toast-background {
+.Toastify__toast.info-toast-background {
   background-color: $editor-modal-gray;
+  color: #FFFFFF;
 }
 
 .info-toast-background button {
@@ -125,8 +126,9 @@ body {
   color: #FFFFFF;
 }
 
-.error-toast-background {
+.Toastify__toast.error-toast-background {
   background-color: #AC1706;//$wick-red-dark;
+  color: #FFFFFF;
 }
 
 .error-toast-background button {
@@ -137,8 +139,9 @@ body {
   color: #FFFFFF;
 }
 
-.warning-toast-background {
+.Toastify__toast.warning-toast-background {
   background-color: $wick-yellow-light;//$wick-yellow-dark;
+  color: #000000;
 }
 
 .warning-toast-background button {
@@ -149,8 +152,9 @@ body {
   color: #000000;
 }
 
-.success-toast-background {
+.Toastify__toast.success-toast-background {
   background-color: $wick-green-light;//$wick-green-dark;
+  color: #000000;
 }
 
 .success-toast-background button {
@@ -296,4 +300,14 @@ body {
 .mobile-reflex-splitter {
   height: 15px !important;
   border: 3px solid black !important;
+}
+// The button that closes a toast, in the color of its text.
+.Toastify__close-button {
+  color: inherit;
+  opacity: 1;
+}
+
+.Toastify__close-button > svg {
+  width: 20px;
+  height: 20px;
 }

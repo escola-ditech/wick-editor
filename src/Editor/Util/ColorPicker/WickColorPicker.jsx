@@ -6,7 +6,7 @@ import './_wickcolorpicker.scss';
 import { CustomPicker } from 'react-color';
 import WickSwatch from 'Editor/Util/ColorPicker/WickSwatch/WickSwatch'
 
-import { Saturation, Hue, Alpha, Checkboard, Swatch } from 'react-color/lib/components/common';
+import { Saturation, Hue, Alpha, Swatch } from 'react-color/lib/components/common';
 import { SketchFields } from 'react-color/lib/components/sketch/SketchFields';
 
 class WickColorPicker extends Component {
@@ -147,11 +147,15 @@ class WickColorPicker extends Component {
                             <Hue {...this.props} height={11}/>
                         </div>
                         <div className="wick-color-picker-control-bar">
-                            <Alpha {...this.props} />
+                            {/* react-color draws its checkerboard using default props, which React 19 no
+                                longer applies to it. The checkerboard is drawn here instead, and the
+                                empty renderers keep react-color from failing. */}
+                            <div className="wick-color-picker-checkerboard" />
+                            <Alpha {...this.props} renderers={{}} />
                         </div>
                     </div>
                     <div className="wick-color-picker-color-block-container">
-                        <Checkboard />
+                        <div className="wick-color-picker-checkerboard" />
                         <div style={styles.activeColor} />
                     </div>
                 </div>

@@ -21,13 +21,10 @@ import React, { Component } from 'react';
 import './_wickinput.scss';
 
 import Select from 'react-select';
-import 'react-dropdown/style.css';
 
 import ColorPicker from 'Editor/Util/ColorPicker/ColorPicker';
-import ReactTooltip from 'react-tooltip';
 import WickButton from './WickButton/WickButton';
 
-import { Input } from 'reactstrap';
 import WickTextInput from './WickTextInput/WickTextInput';
 import { isMobile } from 'react-device-detect';
 
@@ -58,34 +55,16 @@ class WickInput extends Component {
     if (this.props.tooltip && !isMobile) {
       return (
         <div
-          data-tip
-          data-for={tooltipID}
+          data-tooltip-content={this.props.tooltip}
+          data-tooltip-place={this.props.tooltipPlace === undefined ? 'bottom' : this.props.tooltipPlace}
           id={tooltipID}
           className={classNames("wick-input-container", this.props.containerclassname)}>
-          {this.renderTooltip(tooltipID)}
           {this.renderContent()}
         </div>
       );
     } else {
       return this.renderContent();
     }
-  }
-
-  renderTooltip = (tooltipID) => {
-    // Detect if on mobile to disable tooltips.
-
-    return (
-      <ReactTooltip
-        disable={isMobile}
-        id={tooltipID}
-        type='info'
-        place={this.props.tooltipPlace === undefined ? 'bottom' : this.props.tooltipPlace}
-        effect='solid'
-        aria-haspopup='true'
-        className="wick-tooltip">
-        <span>{this.props.tooltip}</span>
-      </ReactTooltip>
-    )
   }
 
   renderContent = () => {
@@ -268,10 +247,10 @@ class WickInput extends Component {
   renderRadio = () => {
     if(!this.props.name) throw new Error("WickInput radio buttons require a name.");
     return (
-      <Input
-        type="radio"
+      <input
         {...this.props}
-        className={classNames("wick-radio", this.props.className)}
+        type="radio"
+        className={classNames("form-check-input", "wick-radio", this.props.className)}
       />
     );
   }

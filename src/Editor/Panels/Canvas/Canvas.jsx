@@ -18,7 +18,7 @@
  */
 
 import React, { Component } from 'react';
-import { DropTarget } from 'react-dnd';
+import { useDrop } from 'react-dnd';
 import DragDropTypes from 'Editor/DragDropTypes.js';
 
 import './_canvas.scss';
@@ -64,11 +64,15 @@ class Canvas extends Component {
     this.attachProjectToComponent(project);
   }
 
-  render() {
-    const { connectDropTarget, isOver } = this.props;
+  connectDropTargetNode = (node) => {
+    this.props.connectDropTarget(node);
+  }
 
-    return connectDropTarget (
-      <div id="canvas-container-wrapper" style={{width:"100%", height:"100%"}} aria-label="Canvas">
+  render() {
+    const { isOver } = this.props;
+
+    return (
+      <div id="canvas-container-wrapper" ref={this.connectDropTargetNode} style={{width:"100%", height:"100%"}} aria-label="Canvas">
         { isOver && <div className="drag-drop-overlay" /> }
         <div id="wick-canvas-container" ref={this.canvasContainer}></div>
       </div>
@@ -98,11 +102,15 @@ const canvasTarget = {
   }
 }
 
-function collect(connect, monitor) {
-  return {
-    connectDropTarget: connect.dropTarget(),
-    isOver: monitor.isOver(),
-  };
-}
+/**
+ * The canvas, accepting assets and files dropped on it.
+ */
+export default function DroppableCanvas (props) {
+  const [{ isOver }, connectDropTarget] = useDrop({
+    accept: DragDropTypes.CANVAS,
+    drop: (item, monitor) => canvasTarget.drop(props, monitor),
+    collect: (monitor) => ({ isOver: monitor.isOver() }),
+  });
 
-export default DropTarget(DragDropTypes.CANVAS, canvasTarget, collect)(Canvas);
+  return <Canvas {...props} connectDropTarget={connectDropTarget} isOver={isOver} />;
+}

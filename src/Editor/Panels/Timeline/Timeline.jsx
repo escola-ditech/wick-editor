@@ -19,7 +19,7 @@
 
 import React, { Component } from 'react';
 
-import { DropTarget } from 'react-dnd';
+import { useDrop } from 'react-dnd';
 import DragDropTypes from 'Editor/DragDropTypes.js';
 
 import './_timeline.scss';
@@ -96,14 +96,18 @@ class Timeline extends Component {
   }
 
   render() {
-    const { connectDropTarget, isOver } = this.props;
+    const { isOver } = this.props;
 
-    return connectDropTarget (
-      <div id="animation-timeline-container" aria-label="Timeline">
+    return (
+      <div id="animation-timeline-container" ref={this.connectDropTargetNode} aria-label="Timeline">
         { isOver && <div className="drag-drop-overlay" /> }
         <div id="animation-timeline" ref={this.canvasContainer} />
       </div>
     )
+  }
+
+  connectDropTargetNode = (node) => {
+    this.props.connectDropTarget(node);
   }
 
   onProjectModified = () => {
@@ -129,11 +133,16 @@ const timelineTarget = {
   }
 }
 
-function collect(connect, monitor) {
-  return {
-    connectDropTarget: connect.dropTarget(),
-    isOver: monitor.isOver(),
-  };
-}
+/**
+ * The timeline, accepting sounds dropped on it.
+ */
+export default function DroppableTimeline (props) {
+  const [{ isOver }, connectDropTarget] = useDrop({
+    accept: DragDropTypes.TIMELINE,
+    drop: (item, monitor) => timelineTarget.drop(props, monitor),
+    hover: (item, monitor) => timelineTarget.hover(props, monitor),
+    collect: (monitor) => ({ isOver: monitor.isOver() }),
+  });
 
-export default DropTarget(DragDropTypes.TIMELINE, timelineTarget, collect)(Timeline)
+  return <Timeline {...props} connectDropTarget={connectDropTarget} isOver={isOver} />;
+}

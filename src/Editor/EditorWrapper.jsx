@@ -24,6 +24,7 @@ import { ToastContainer } from 'react-toastify';
 import { GlobalHotKeys } from 'react-hotkeys';
 import ErrorPage from './Util/ErrorPage';
 import ModalHandler from './Modals/ModalHandler/ModalHandler';
+import WickTooltip from './Util/WickTooltip/WickTooltip';
 // Imported from their own files, so the console viewer (only used by the code editor) is not pulled in.
 import Hook from 'console-feed/lib/Hook';
 import Unhook from 'console-feed/lib/Unhook';
@@ -55,13 +56,14 @@ export default function EditorWrapper(props) {
                 newestOnTop={false}
                 closeOnClick
                 rtl={false}
-                pauseOnVisibilityChange
+                pauseOnFocusLoss
                 draggable
                 pauseOnHover />
             <GlobalHotKeys
                 allowChanges={true}
                 keyMap={props.editor.getKeyMap()}
                 handlers={props.editor.getKeyHandlers()} />
+            <WickTooltip />
             <div id="editor" className="theme-default">
                 <ModalHandler
                     getRenderSize={props.editor.getRenderSize}

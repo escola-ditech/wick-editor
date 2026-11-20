@@ -2,10 +2,8 @@ import React, { Component } from 'react';
 
 import ActionButton from 'Editor/Util/ActionButton/ActionButton';
 import PlayButton from 'Editor/Util/PlayButton/PlayButton';
-import ReactTooltip from 'react-tooltip';
 import HotKeyInterface from 'Editor/hotKeyMap';
 import './_canvastransforms.scss';
-import { isMobile } from 'react-device-detect';
 
 import classNames from 'classnames';
 
@@ -146,30 +144,15 @@ class CanvasTransforms extends Component {
       });
   }
 
-  renderPlayButtonTooltip = () => {
-    return (
-      <ReactTooltip
-        disable={isMobile}
-        id={'play-button-object'}
-        type='info'
-        place={'top'}
-        effect='solid'
-        aria-haspopup='true'
-        className="wick-tooltip">
-        <span>{`Preview Play (${this.getHotkey('preview-play-toggle').toUpperCase()})`}</span>
-      </ReactTooltip>
-    )
-  }
-
   render () {
     return (
       <div className={classNames("canvas-transforms-widget", this.props.renderSize === "small" && "mobile")}>
         {!this.props.previewPlaying && this.renderTransformations()}
         <div className="play-button-container">
-          {this.renderPlayButtonTooltip()}
           <PlayButton
             id="play-button-object"
             className="play-button canvas-transform-button"
+            tooltip={`Preview Play (${this.getHotkey('preview-play-toggle').toUpperCase()})`}
             playing={this.props.previewPlaying}
             action={this.props.togglePreviewPlaying}/>
         </div>

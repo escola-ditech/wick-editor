@@ -1,0 +1,48 @@
+// The distance to the target is set by the Popover component, not by the margins of Bootstrap.
+.popover.wick-popover {
+  margin: 0;
+
+  // Bootstrap gives the arrow a side margin, which would move it away from the target.
+  > .arrow {
+    margin: 0;
+  }
+}
+
+.wick-plain-popover {
+  z-index: 1060;
+}
+
+.wick-plain-popover-arrow {
+  position: absolute;
+  width: 14px;
+  height: 7px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    border: 7px solid transparent;
+  }
+}
+
+.wick-plain-popover-bottom > .wick-plain-popover-arrow {
+  top: -7px;
+
+  &::before {
+    top: -7px;
+    border-bottom-color: #000000;
+  }
+}
+
+.wick-plain-popover-top > .wick-plain-popover-arrow {
+  bottom: -7px;
+
+  &::before {
+    border-top-color: #000000;
+  }
+}
+
+.wick-plain-popover-left > .wick-plain-popover-arrow,
+.wick-plain-popover-right > .wick-plain-popover-arrow {
+  display: none;
+}

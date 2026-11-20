@@ -27,9 +27,9 @@ class PlayButton extends Component {
   render() {
     return (
       <input
-        data-tip
+        data-tooltip-content={this.props.tooltip}
+        data-tooltip-place="top"
         id={this.props.id}
-        data-for={this.props.id}
         type="image"
         className={"play-icon " + this.props.className}
         alt={"playing button"}

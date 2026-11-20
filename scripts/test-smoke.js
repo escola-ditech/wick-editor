@@ -160,6 +160,45 @@ async function main() {
         return shown;
       });
       check('the code editor opens', codeEditorOpened);
+
+      // The parts of the interface that react to the keyboard and float over the editor.
+      const activeTool = () => page.evaluate(() => window.editor.getActiveTool().name);
+      // The mouse is moved to coordinates, because finding an element to click or hover
+      // makes the browser wait for a new frame, which a headless browser may take long to draw.
+      const centerOf = (selector) => page.evaluate((selector) => {
+        const box = document.querySelector(selector).getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      }, selector);
+      const fillColor = await centerOf('button#tool-box-fill-color');
+      await page.mouse.click(640, 300);
+      await page.keyboard.press('b');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const toolAfterB = await activeTool();
+      await page.keyboard.press('c');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      check('keyboard shortcuts change the tool', toolAfterB === 'brush' && (await activeTool()) === 'cursor');
+
+      await page.mouse.move(fillColor.x, fillColor.y, { steps: 3 });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const tooltip = await page.evaluate(() => (document.querySelector('.wick-tooltip') || {}).innerText);
+      check('a tooltip is shown when hovering a button', tooltip === 'Fill Color');
+
+      await page.evaluate(() => window.editor.changeColorPickerType('spectrum'));
+      await page.mouse.click(fillColor.x, fillColor.y);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const pickerOpened = await page.evaluate(() => Boolean(
+        document.querySelector('.popover .wick-color-picker-saturation') && document.querySelector('.menu-bar')));
+      await page.mouse.click(640, 300);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const pickerClosed = await page.evaluate(() => !document.querySelector('.popover'));
+      check('the color picker opens, and closes when clicking outside of it', pickerOpened && pickerClosed);
+
+      const toastShown = await page.evaluate(async () => {
+        window.editor.toast('Smoke test', 'info');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        return Boolean(document.querySelector('.Toastify__toast'));
+      });
+      check('notifications are shown', toastShown);
     }
 
     // Give late errors a moment to show up, and the loading screen time to fade out.

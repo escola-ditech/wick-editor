@@ -19,7 +19,7 @@
 
 import React, { Component } from 'react';
 import WickModal from 'Editor/Modals/WickModal/WickModal';
-import { Progress } from 'reactstrap';
+import classNames from 'classnames';
 
 import './_exportmedia.scss';
 
@@ -44,12 +44,16 @@ class ExportMedia extends Component {
         <div id="media-export-modal-title">Exporting {this.props.renderType}</div>
         <div className="media-export-modal-content">
           <div id="media-export-modal-subtitle">Creating "{renderName}"</div>
-          <Progress
-            striped
-            animated={!this.renderDone}
-            color={this.renderDone ? 'success' : 'warning'}
-            value={this.props.renderProgress}
-          />
+          <div className="progress">
+            <div
+              className={classNames("progress-bar", "progress-bar-striped",
+                this.renderDone ? "bg-success" : "bg-warning progress-bar-animated")}
+              role="progressbar"
+              style={{width: (this.props.renderProgress || 0) + '%'}}
+              aria-valuenow={this.props.renderProgress || 0}
+              aria-valuemin="0"
+              aria-valuemax="100" />
+          </div>
           <div id="media-export-modal-status-message">{this.props.renderStatusMessage}</div>
         </div>
       </WickModal>

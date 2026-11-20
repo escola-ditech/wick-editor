@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from 'react';
-import { Popover } from 'reactstrap';
+import Popover from 'Editor/Util/Popover/Popover';
 import WickColorPicker  from 'Editor/Util/ColorPicker/WickColorPicker';
 
 import './_colorpicker.scss';
@@ -59,8 +59,7 @@ export default function ColorPicker (props) {
             placement={props.placement}
             isOpen={open}
             toggle={toggle}
-            target={itemID}
-            boundariesElement={'viewport'}>
+            target={itemID}>
             <WickColorPicker
               toggle={toggle}
               colorPickerType={props.colorPickerType}
