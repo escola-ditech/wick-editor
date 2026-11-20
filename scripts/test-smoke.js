@@ -98,7 +98,7 @@ async function main() {
     if (state.toolIcons.length) console.log('     broken images: ' + state.toolIcons.slice(0, 5).join(', '));
 
     if (state.hasEditor) {
-      // Close the welcome message, draw something and save it as a .wick file.
+      // Draw something and save it as a .wick file.
       const result = await page.evaluate(async () => {
         const editor = window.editor;
         editor.closeActiveModal();
@@ -133,8 +133,8 @@ async function main() {
 
     if (state.hasEditor) {
       // Open every window of the editor, so an error in any of them shows up.
-      const modals = ['WelcomeMessage', 'MakeAnimated', 'MakeInteractive', 'ExportOptions', 'SettingsModal',
-        'BuiltinLibrary', 'EditorInfo', 'OpenSourceNotices', 'SupportUs', 'SimpleProjectSettings'];
+      const modals = ['MakeAnimated', 'MakeInteractive', 'ExportOptions', 'SettingsModal',
+        'BuiltinLibrary', 'EditorInfo', 'OpenSourceNotices', 'SimpleProjectSettings'];
       const opened = [];
       for (const modal of modals) {
         const isOpen = await page.evaluate(async (name) => {
@@ -207,9 +207,11 @@ async function main() {
     const after = await page.evaluate(() => ({
       preloaderGone: !document.getElementById('preloader'),
       openModal: window.editor ? window.editor.state.activeModalName : undefined,
+      recoveryOffered: Array.from(document.querySelectorAll('.Toastify__toast')).some(toast => /recover/i.test(toast.innerText)),
     }));
     check('the loading screen is gone', after.preloaderGone);
-    check('no autosave is offered for work done in this visit', after.openModal === null);
+    check('no window is left open', after.openModal === null);
+    check('recovering work is not offered for work done in this visit', !after.recoveryOffered);
 
     if (screenshotPath) {
       await page.screenshot({ path: screenshotPath });

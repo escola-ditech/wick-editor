@@ -20,8 +20,6 @@
 import React, { Component } from 'react';
 
 import MakeInteractive from '../MakeInteractive/MakeInteractive';
-import AutosaveWarning from '../AutosaveWarning/AutosaveWarning';
-import WelcomeMessage from '../WelcomeMessage/WelcomeMessage';
 import MakeAnimated from '../MakeAnimated/MakeAnimated';
 import ExportOptions from '../ExportOptions/ExportOptions';
 import GeneralWarning from '../GeneralWarning/GeneralWarning';
@@ -32,7 +30,6 @@ import EditorInfo from '../EditorInfo/EditorInfo';
 import MobileMenu from '../MobileMenu/MobileMenu';
 import SavedProjects from '../SavedProjects/SavedProjects';
 import SimpleProjectSettings from '../SimpleProjectSettings/SimpleProjectSettings';
-import SupportUs from '../SupportUs/SupportUs';
 import LazyComponent from 'Editor/Util/LazyComponent/LazyComponent';
 
 // The license texts are large and rarely read, so they are only downloaded when asked for.
@@ -65,20 +62,6 @@ class ModalHandler extends Component {
             createClipFromSelection={this.props.createClipFromSelection}
             createButtonFromSelection={this.props.createButtonFromSelection}
           />
-        <AutosaveWarning
-            openModal={this.props.openModal}
-            toggle={this.props.closeActiveModal}
-            open={this.props.activeModalName === 'AutosaveWarning'}
-            loadAutosavedProject={this.props.loadAutosavedProject}
-            clearAutoSavedProject={this.props.clearAutoSavedProject}
-        />
-        <WelcomeMessage
-          isMobile={isMobile}
-          openModal={this.props.openModal}
-          toggle={this.props.closeActiveModal}
-          open={this.props.activeModalName === 'WelcomeMessage'}
-          editorVersion={this.props.editorVersion}
-        />
         <ExportOptions
           isMobile={isMobile}
           openModal={this.props.openModal}
@@ -187,13 +170,6 @@ class ModalHandler extends Component {
           project={this.props.project}
           toggle={this.props.closeActiveModal}
           open={this.props.activeModalName === 'SimpleProjectSettings'}/>
-
-        <SupportUs
-          isMobile={isMobile}
-          openModal={this.props.openModal}
-          toggle={this.props.closeActiveModal}
-          open={this.props.activeModalName === 'SupportUs'}
-          />
       </div>
     );
   }

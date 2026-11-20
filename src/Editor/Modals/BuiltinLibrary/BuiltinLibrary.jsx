@@ -45,8 +45,7 @@ class BuiltinLibrary extends Component {
       <WickModal
       open={this.props.open}
       toggle={this.props.toggle}
-      className="modal-body welcome-modal-body"
-      overlayClassName="modal-overlay welcome-modal-overlay">
+      className="modal-body builtin-library-modal-body">
         <div className='builtin-library'>
           <div className="builtin-library-modal-title">
             Builtin Library (Beta)

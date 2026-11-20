@@ -1499,6 +1499,7 @@ class EditorCore extends Component {
     // if (!project) return;
     this.resetEditorForLoad();
     this.project = project || new window.Wick.Project();
+    this.projectWasModified = false;
 
     // A project is only tied to a save in the user's account after being opened from or saved to it.
     this.cloudProjectId = null;
@@ -1563,7 +1564,11 @@ class EditorCore extends Component {
 
     this.doesAutoSavedProjectExist(exists => {
       if (exists) {
-        this.queueModal('AutosaveWarning');
+        // A notification that goes away by itself, so starting the editor is never interrupted.
+        this.toast('Recover the work from your last visit? Click here.', 'info', {
+          autoClose: 12000,
+          onClick: () => this.loadAutosavedProject(() => {}),
+        });
       }
     });
   }
@@ -1699,6 +1704,10 @@ class EditorCore extends Component {
     if (!this.project) return;
     if (this.state.previewPlaying) return;
     if (this.state.activeModalName !== null) return;
+
+    // A project that was just created or opened has nothing worth recovering, and
+    // saving it would replace the autosave of the previous visit.
+    if (!this.projectWasModified) return;
 
     let owner = this.state.user ? this.state.user.uid : '';
 

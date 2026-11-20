@@ -19,6 +19,14 @@
 
 @import 'Editor/_wickbrand.scss';
 
+.builtin-library-modal-body {
+  width: 670px;
+  height: 420px;
+  max-width: 670px;
+  max-height: 420px;
+  padding: 0px;
+}
+
 $margin: 3%;
 
 .builtin-library {

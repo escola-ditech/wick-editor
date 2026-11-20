@@ -79,7 +79,7 @@ class Editor extends EditorCore {
     this.state = {
       project: null,
       previewPlaying: false,
-      activeModalName: window.localStorage.skipWelcomeMessage ? null : "WelcomeMessage",
+      activeModalName: null,
       activeModalQueue: [],
       codeEditorOpen: false,
       scriptToEdit: "default",
@@ -137,6 +137,9 @@ class Editor extends EditorCore {
 
     // Last Autosave
     this._lastAutosave = 0;
+
+    // True once the user changed the open project. See autoSaveProject.
+    this.projectWasModified = false;
 
     // Create interfaces.
     this.fontInfoInterface = new FontInfoInterface(this);
@@ -705,6 +708,11 @@ class Editor extends EditorCore {
     if(!options) options = {};
 
     if (!options.actionName) { options.name = "Unknown Action" };
+
+    // Changes that go into the undo history are work done by the user.
+    if (!options.skipHistory && options.actionName !== 'Setup New Project') {
+      this.projectWasModified = true;
+    }
 
     // Request an autosave, so a save will happen sometime later.
     this.requestAutosave();

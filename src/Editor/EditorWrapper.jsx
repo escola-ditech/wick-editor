@@ -82,8 +82,6 @@ export default function EditorWrapper(props) {
                     exportProjectAsImageSequence={props.editor.exportProjectAsImageSequence}
                     exportProjectAsAudioTrack={props.editor.exportProjectAsAudioTrack}
                     warningModalInfo={props.editor.state.warningModalInfo}
-                    loadAutosavedProject={props.editor.loadAutosavedProject}
-                    clearAutoSavedProject={props.editor.clearAutoSavedProject}
                     renderProgress={props.editor.state.renderProgress}
                     renderStatusMessage={props.editor.state.renderStatusMessage}
                     renderType={props.editor.state.renderType}
