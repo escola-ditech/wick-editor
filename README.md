@@ -32,7 +32,7 @@ These instructions work on Windows, MacOS and Linux.
 
 You'll need to download the following:
 
-- [Node.js](https://nodejs.org/) 22 or newer (includes npm)
+- [Node.js](https://nodejs.org/) 26 or newer (includes npm)
 
 ### Installation
 
