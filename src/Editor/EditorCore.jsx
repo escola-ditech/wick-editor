@@ -1510,7 +1510,14 @@ class EditorCore extends Component {
     this.projectDidChange({ actionName: "Setup New Project" });
     this.hideWaitOverlay();
 
-    this.project.prepareProjectForEditor();
+    // The canvas and the timeline are only attached to the new project once React has
+    // rendered. Recentering and drawing need the size of the canvas, so they wait for that.
+    let newProject = this.project;
+    this.setState({}, () => {
+      if (this.project !== newProject) return;
+      newProject.prepareProjectForEditor();
+      newProject.guiElement.draw();
+    });
   }
 
   openNewProjectConfirmation = () => {
